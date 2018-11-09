@@ -1,0 +1,22 @@
+{
+  "name": "iasc-2018-tp-cola-msj",
+  "version": "1.0.0",
+  "description": "*Implementacion de Arquitecturas Concurrentes UTN FRBA*",
+  "main": "nodo_manager.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nahuedu/iasc-2018-tp-cola-msj.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nahuedu/iasc-2018-tp-cola-msj/issues"
+  },
+  "homepage": "https://github.com/nahuedu/iasc-2018-tp-cola-msj#readme",
+  "dependencies": {
+    "express": "^4.16.4"
+  }
+}
