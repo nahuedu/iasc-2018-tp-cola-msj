@@ -33,7 +33,7 @@ app.get('/newQueue', function (req, res) {
     var topic = req.query.topic;
     var tipoCola = req.query.tipoCola;
 
-    if (!topics.includes(topic)) {
+    if (getTopic(topic) == null) {
         process.send({tipo: "createQueue", topic: topic, tipoCola: tipoCola})
         topics.push({topic: topic, tipoCola: tipoCola, lleno: false})
         res.send({success: true, msg: 'Cola creada con el topic '+topic});
