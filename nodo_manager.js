@@ -1,13 +1,32 @@
 var express = require('express');
 var app = express();
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
+
+io.origins('*:*') 
 
 var puerto = 9000;
 var topics = []
+var consumers = []
+/* SOCKET */
+io.on('connection', function(socket){
+  socket.on('conect', function(msg){
+    console.log("pedido de conexion a la cola "+msg)
+  });
+});
+
+
+http.listen(3000, function(){
+  console.log('listening on *:3000');
+});
+
+/* FIN SOCKET */
 
 app.listen(puerto, function(){
 	process.send("Estoy escuchando master")
     console.log('nodo manager corriendo en el puerto 9000');
 });
+
 
 app.get('/send', function (req, res) {
 	var msg = req.query.msg;
