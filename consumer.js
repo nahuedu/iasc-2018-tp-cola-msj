@@ -1,10 +1,17 @@
 var io = require('socket.io-client')
-var socket = io('http://127.0.0.1:3000');
+var socket = io(process.env["MASTER"]);
+var sleep = require('sleep');
 
 socket.on('connect', function(){
-	console.log("conectado")
+	socket.emit('conectar_topic', { topic: process.env["TOPIC"] });
 });
-socket.on('event', function(data){
-	console.log(data)
+
+socket.on('status_topic', function(msg){
+	console.log(msg)
 });
-socket.on('disconnect', function(){});
+
+socket.on('mensaje', function(msg){
+	console.log(msg.mensaje)
+	sleep.sleep(10)
+	socket.emit('working', { topic: process.env["TOPIC"], working: false });
+});

@@ -15,7 +15,7 @@ node master.js
 
 ### CREO UNA NUEVA COLA
 
-GET localhost:9000/newQueue?topic=topicDeLaQueue&tipoCola=cola_de_trabajo
+GET http://localhost:9000/newQueue?topic=topicDeLaQueue&tipoCola=cola_de_trabajo
 
 
 ### GUARDO MENSAJES
