@@ -1,4 +1,5 @@
 const express = require('express');
+const bodyParser = require('body-parser');
 const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
@@ -36,6 +37,7 @@ io.on('connection', (socket) => {
   })
 });
 
+app.use(bodyParser.json()); // for parsing application/json
 http.listen(3000, () => {
   console.log('listening on *:3000');
 });
@@ -46,10 +48,11 @@ app.listen(puerto, () => {
   console.log('nodo manager corriendo en el puerto 9000');
 });
 
-app.get('/send', (req, res) => {
-  console.log(`req: `, req.query);
-  const msg = req.query.msg;
-  const topic = req.query.topic;
+app.post('/send', (req, res) => {
+  const body = req.body;
+  console.log(`req: `, body);
+  const msg = body.msg;
+  const topic = body.topic;
   console.log(`recibí: ${msg} al topico: ${topic}`);
   const existentTopic = getTopic(topic, statusManager.topics);
   console.log('existent topic: ', existentTopic);
@@ -68,9 +71,10 @@ app.get('/send', (req, res) => {
 
 });
 
-app.get('/newQueue', function (req, res) {
-  const topic = req.query.topic;
-  const tipoCola = req.query.tipoCola;
+app.post('/queue', function (req, res) {
+  const body = req.body;
+  const topic = body.topic;
+  const tipoCola = body.tipoCola;
 
   if (getTopic(topic, statusManager.topics) == null) {
     if (tipoCola === 'cola_de_trabajo'){
