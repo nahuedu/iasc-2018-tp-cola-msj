@@ -16,12 +16,23 @@ node master.js
 
 ### CREO UNA NUEVA COLA
 
-GET http://localhost:9000/newQueue?topic=topicDeLaQueue&tipoCola=cola_de_trabajo
-
+POST http://localhost:9000/queue
+```
+{
+	"topic":"topic_1",
+	"tipoCola":"cola_de_trabajo"
+}
+```
 
 ### GUARDO MENSAJES
 
-GET http://localhost:9000/send?topic=topicDeLaQueue&msg=este_es_mi_mensaje
+POST http://localhost:9000/send
+```
+{
+	"msg": {"data":"datadatadata"},
+	"topic": "topic_1"
+}
+```
 
 
 ### CONECTO CONSUMIDOR
