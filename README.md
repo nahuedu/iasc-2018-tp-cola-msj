@@ -8,9 +8,10 @@
 - [Arquitectura](https://docs.google.com/document/d/1GS7BGE-P46VPbF90aM__Ry0TZEZ2GpYBElyf6C0-PsE/edit)
 
 ## Run
-
+```
 node master.js
-
+```
+> Si es la primera vez que lo corren no olvidarse de instalar las dependencias antes con un ```npm install```
 ## Uso
 
 ### CREO UNA NUEVA COLA
@@ -20,4 +21,12 @@ GET http://localhost:9000/newQueue?topic=topicDeLaQueue&tipoCola=cola_de_trabajo
 
 ### GUARDO MENSAJES
 
-GET http://localhost:9000/send?topic=topicDeLaQueue&msg=este es mi mensaje
+GET http://localhost:9000/send?topic=topicDeLaQueue&msg=este_es_mi_mensaje
+
+
+### CONECTO CONSUMIDOR
+```
+export TOPIC=topicDeLaQueue
+export MASTER=http://127.0.0.1:3000
+node consumer.js
+```
