@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/nahuedu/iasc-2018-tp-cola-msj#readme",
   "dependencies": {
+    "config": "^3.0.0",
     "express": "^4.16.4",
     "sleep": "^5.2.3",
     "socket.io": "^2.1.1"

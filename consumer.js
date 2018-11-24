@@ -1,17 +1,20 @@
-var io = require('socket.io-client')
-var socket = io(process.env["MASTER"]);
-var sleep = require('sleep');
+const io = require('socket.io-client');
+const config = require('config');
+const socket = io(config.get('master.host'));
+const sleep = require('sleep');
 
-socket.on('connect', function(){
-	socket.emit('conectar_topic', { topic: process.env["TOPIC"] });
+const topic = config.get('consumer.topic');
+
+socket.on('connect', () => {
+  socket.emit('conectar_topic', {topic});
 });
 
-socket.on('status_topic', function(msg){
-	console.log(msg)
+socket.on('status_topic', (msg) => {
+  console.log(msg)
 });
 
-socket.on('mensaje', function(msg){
-	console.log(msg.mensaje)
-	sleep.sleep(10)
-	socket.emit('working', { topic: process.env["TOPIC"], working: false });
+socket.on('mensaje', (msg) => {
+  console.log(msg.mensaje);
+  sleep.sleep(10);
+  socket.emit('working', {topic, working: false});
 });

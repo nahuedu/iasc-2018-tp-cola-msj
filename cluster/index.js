@@ -14,22 +14,22 @@ if (cluster.isMaster) {
     res.writeHead(200);
     res.end('OK\n');
     for (const id in cluster.workers) {
-        cluster.workers[id].send('Hola workers!');
+      cluster.workers[id].send('Hola workers!');
     }
   }).listen(8000);
 
   for (const id in cluster.workers) {
-    cluster.workers[id].on('message', function(msg){
-        console.log(`Master received: ${msg} `);
+    cluster.workers[id].on('message', function (msg) {
+      console.log(`Master received: ${msg} `);
     });
   }
 
 } else {
 
-    console.log(`Worker ${process.pid} started`);
-    process.on('message', (msg) => {
-        console.log(`Worker received: ${msg} `);
-        process.send('Hola Master!');
-    });
-  
+  console.log(`Worker ${process.pid} started`);
+  process.on('message', (msg) => {
+    console.log(`Worker received: ${msg} `);
+    process.send('Hola Master!');
+  });
+
 }
