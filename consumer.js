@@ -6,15 +6,15 @@ const sleep = require('sleep');
 const topic = config.get('consumer.topic');
 
 socket.on('connect', () => {
-  socket.emit('conectar_topic', {topic});
+  socket.emit('conectar_topic', { topic });
 });
 
-socket.on('status_topic', (msg) => {
-  console.log(msg)
+socket.on('status_topic', msg => {
+  console.log(msg);
 });
 
-socket.on('mensaje', (msg) => {
+socket.on('mensaje', msg => {
   console.log(msg.mensaje);
   sleep.sleep(10);
-  socket.emit('working', {topic, working: false});
+  socket.emit('working', { topic, working: false });
 });

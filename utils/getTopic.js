@@ -1,9 +1,1 @@
-module.exports = (topic, topics) => {
-  let topicReturn = null;
-  topics.forEach((t) => {
-    if (topic === t.topic)
-      topicReturn = t;
-  });
-
-  return topicReturn;
-};
+module.exports = (topic, topics) => topics.find(t => topic == t.topic);

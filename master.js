@@ -1,67 +1,84 @@
-const child_process = require('child_process');
+const { fork } = require('child_process');
 
-let manager;
-const queues = [];
-createManager();
+class Manager {
+  constructor() {
+    this.queues = [];
+    this.nodo = fork("nodo_manager.js");
+    this.replica = null;
+    this.handleMessage = this.handleMessage.bind(this);
+    this.nodo.on('message', this.handleMessage);
+    //this.replica.on('message', this.handleMessage);
+  }
 
-function createManager() {
-  const nodoManager = child_process.fork("nodo_manager.js");
-  /* Administra mensajes recibidos*/
-  nodoManager.on('message', function (msg) {
-    if (msg.tipo === "createQueue") {
-      createQueue(msg.topic, msg.tipoCola, msg.idConsumer)
+  handleMessage({ tipo, topic, tipoCola, idConsumer, msg }) {
+    switch (tipo) {
+      case "createQueue":
+        this.createQueue(topic, tipoCola, idConsumer);
+        break;
+      case "deleteQueue":
+        this.deleteQueue(topic, tipoCola, idConsumer);
+        break;
+      case "sendMsg":
+        this.sendMsg(topic, msg);
+        break;
+      case "consumerRecibeMensajes":
+        this.consumerRecibeMensajes(topic, msg);
+        break;
+      case "removeConsumer":
+        this.removeConsumer(topic, msg);
+        break;
+      default:
+        throw new Error("Invalid message type.");
     }
-    else if (msg.tipo === "deleteQueue") {
-      deleteQueue(msg.topic, msg.tipoCola, msg.idConsumer)
-    }
-    else if (msg.tipo === "sendMsg") {
-      queues.forEach((q) => {
-        if (q.topic === msg.topic)
-          q.nodo.send(msg.msg)
-      })
-    }
-    else if (msg.tipo === "consumerRecibeMensajes") {
-      queues.forEach((q) => {
-        if (q.topic === msg.topic)
-          q.nodo.send(msg)
-      })
-    }
-    else if (msg.tipo === "removeConsumer") {
-      queues.forEach((q) => {
-        if (q.topic === msg.topic)
-          q.nodo.send(msg)
-      })
-    }
-  });
+  };
 
-  manager = {nodo: nodoManager, replica: null};
-  return nodoManager
-}
+  createQueue(topic, tipo, consumidor) {
+    const { nodo, replica } = new Queue(this.nodo);
+    console.log(`Queue creada: ${topic} nodo queue: ${nodo.pid}`);
+    nodo.send({ tipo: "consumer", consumidor });
+    this.queues.push({ topic, nodo, replica });
+  }
 
-function deleteQueue(topic, tipoCola, idConsumer) {
-  if (tipoCola === "publicar_suscribir") {
-    queues.forEach((q) => {
-      if (q.topic === topic) {
-        q.nodo.send({tipo: "delete", consumidor: idConsumer})
-      }
-    })
+  deleteQueue(topic, tipo, consumidor) {
+    if (tipoCola == "publicar_suscribir") {
+      queues.forEach(q => q.topic == topic && q.nodo.send({ tipo: "delete", consumidor }));
+    };
+  }
+
+  sendMsg(topic, msg) {
+    this.queues.forEach(q => q.topic == topic && q.nodo.send(msg));
+  }
+
+  consumerRecibeMensajes(topic, msg) {
+    this.queues.forEach(q => q.topic == topic && q.nodo.send(msg));
+  }
+
+  removeConsumer(topic, msg) {
+    this.queues.forEach(q => q.topic == topic && q.nodo.send(msg));
   }
 }
 
-function createQueue(topic, tipoCola, idConsumer) {
-  const nodoQueue = child_process.fork("nodo_queue.js");
-  //var nodoQueueReplica = child_process.fork("nodo_queue.js")
-  console.log(`Queue creada: ${topic} nodo queue: `, nodoQueue.pid);
-  nodoQueue.on('message', function (msg) {
-    if (msg.tipo === "FULL") {
-      manager.nodo.send({topic: topic, msg: msg.tipo})
-    } else if (msg.tipo === "enviarMensaje") {
-      manager.nodo.send({topic: topic, tipo: msg.tipo, mensaje: msg.mensaje, idConsumer: msg.idConsumer})
+class Queue {
+  constructor(manager) {
+    this.manager = manager;
+    this.nodo = fork("nodo_queue.js");
+    this.replica = null;
+    this.handleMessage = this.handleMessage.bind(this);
+    this.nodo.on('message', this.handleMessage);
+    //this.replica.on('message', this.handleMessage);
+  }
+
+  handleMessage({ tipo, topic, mensaje, idConsumer }) {
+    switch (tipo) {
+      case "FULL":
+        this.manager.send({ topic, msg: tipo });
+      case "enviarMensaje":
+        this.manager.send({ topic, tipo, mensaje, idConsumer });
+        break;
+      default:
+        throw new Error("Invalid message type.");
     }
-  });
-
-  nodoQueue.send({tipo: "consumer", consumidor: idConsumer});
-
-  queues.push({topic: topic, nodo: nodoQueue, replica: null});
-  return nodoQueue
+  }
 }
+
+new Manager();
