@@ -18,7 +18,7 @@ module.exports = (msg, socket, statusManager) => {
     }
 
     topic.consumers.push(consumer);
-    socket.emit('status_topic', { success: true });
+    socket.emit('status_topic', { success: true , idConsumer: consumer.id});
   } else {
     socket.emit('status_topic', { success: false, message: "No existe el topic " + msg.topic });
   }

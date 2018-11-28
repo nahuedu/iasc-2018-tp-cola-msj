@@ -67,7 +67,14 @@ function handleMessageReplica(msg) {
 
 setInterval(() => {
 	if (statusQueue.original){
-			console.log("Mi status es:", statusQueue)
 			process.send({tipo: "toReplica", status: statusQueue })  
 		}
-}, 3000);
+}, 10);
+
+setInterval(() => {
+	if (statusQueue.original){
+			console.log("Soy queue y mi status es:", statusQueue)
+		}
+}, 5000);
+
+

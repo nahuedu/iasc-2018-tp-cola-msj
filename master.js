@@ -2,16 +2,23 @@ const { fork } = require('child_process');
 var countQueue = 0;
 
 class Manager {
-  constructor() {
+  constructor(original) {
+    this.original = original
     this.queues = [];
     this.nodo = fork("nodo_manager.js");
-    this.replica = null;
     this.handleMessage = this.handleMessage.bind(this);
     this.nodo.on('message', this.handleMessage);
-    //this.replica.on('message', this.handleMessage);
+    this.nodo.send({tipo: "init", original: original})
+    this.nodo.on('close', (code) => {
+      console.log("close with code",code); 
+      if (code == null) {
+        console.log("Manager was killed. Original: "+ this.original)
+        managerKilled(this.original)
+      }
+    });
   }
 
-  handleMessage({ tipo, topic, tipoCola, idConsumer, msg }) {
+  handleMessage({ tipo, topic, tipoCola, idConsumer, msg, status }) {
     switch (tipo) {
       case "createQueue":
         this.createQueue(topic, tipoCola, idConsumer);
@@ -28,8 +35,9 @@ class Manager {
       case "removeConsumer":
         this.removeConsumer(topic, msg);
         break;
-      default:
-        throw new Error("Invalid message type.");
+      case "toReplica":
+        this.toReplica({ tipo, status });
+        break;
     }
   };
 
@@ -65,6 +73,10 @@ class Manager {
 
   removeConsumer(topic, msg) {
     this.queues.forEach(q => q.topic == topic && q.nodo.send(msg));
+  }
+
+  toReplica(msg) {
+    managerReplica.nodo.send(msg)
   }
 
   nodoReplica(idQueue) {
@@ -132,4 +144,15 @@ class Queue {
   }
 }
 
-new Manager();
+var managerOriginal = new Manager(true);
+var managerReplica = new Manager(false);
+
+function managerKilled(original) {
+  if (original) {
+     managerOriginal = managerReplica
+     managerOriginal.original = true
+     managerOriginal.nodo.send({tipo: "init", original: true})
+  }
+
+ managerReplica = new Manager(false)
+}
