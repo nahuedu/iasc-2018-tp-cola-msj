@@ -22,7 +22,7 @@ class Manager {
         this.sendMsg(topic, msg);
         break;
       case "consumerRecibeMensajes":
-        this.consumerRecibeMensajes(topic, msg);
+        this.consumerRecibeMensajes(topic, { tipo, topic, tipoCola, idConsumer, msg });
         break;
       case "removeConsumer":
         this.removeConsumer(topic, msg);
@@ -33,15 +33,16 @@ class Manager {
   };
 
   createQueue(topic, tipo, consumidor) {
-    const { nodo, replica } = new Queue(this.nodo);
+    const { nodo, replica } = new Queue(this.nodo, topic);
     console.log(`Queue creada: ${topic} nodo queue: ${nodo.pid}`);
     nodo.send({ tipo: "consumer", consumidor });
     this.queues.push({ topic, nodo, replica });
   }
 
-  deleteQueue(topic, tipo, consumidor) {
+  deleteQueue(topic, tipoCola, consumidor) {
     if (tipoCola == "publicar_suscribir") {
-      queues.forEach(q => q.topic == topic && q.nodo.send({ tipo: "delete", consumidor }));
+      this.queues.forEach(q => q.topic == topic && q.nodo.send({ tipo: "delete", consumidor }));
+      //this.queues.forEach(q => q.topic == topic && q.nodo.disconnect());
     };
   }
 
@@ -56,24 +57,28 @@ class Manager {
   removeConsumer(topic, msg) {
     this.queues.forEach(q => q.topic == topic && q.nodo.send(msg));
   }
+  
 }
 
 class Queue {
-  constructor(manager) {
+  constructor(manager, topic) {
+    this.topic = topic
     this.manager = manager;
     this.nodo = fork("nodo_queue.js");
     this.replica = null;
     this.handleMessage = this.handleMessage.bind(this);
     this.nodo.on('message', this.handleMessage);
+    this.nodo.on('close', (code) => {console.log("close"); });
+    this.nodo.on('error', (err) => {});
     //this.replica.on('message', this.handleMessage);
   }
 
   handleMessage({ tipo, topic, mensaje, idConsumer }) {
     switch (tipo) {
       case "FULL":
-        this.manager.send({ topic, msg: tipo });
+        this.manager.send({ topic: this.topic, msg: tipo });
       case "enviarMensaje":
-        this.manager.send({ topic, tipo, mensaje, idConsumer });
+        this.manager.send({ topic: this.topic, tipo, mensaje, idConsumer });
         break;
       default:
         throw new Error("Invalid message type.");

@@ -37,7 +37,7 @@ POST http://localhost:9000/send
 
 ### CONECTO CONSUMIDOR
 ```
-export TOPIC=topicDeLaQueue
+export TOPIC=topic_1
 export MASTER=http://127.0.0.1:3000
 node consumer.js
 ```

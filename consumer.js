@@ -15,6 +15,6 @@ socket.on('status_topic', msg => {
 
 socket.on('mensaje', msg => {
   console.log(msg.mensaje);
-  sleep.sleep(10);
+  sleep.sleep(5);
   socket.emit('working', { topic, working: false });
 });

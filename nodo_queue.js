@@ -10,23 +10,22 @@ process.on('message', msg => {
 			break;
 		case "delete":
 			if (consumidor == msg.consumidor) {
-				console.log('me dropeo');
-				process.close();
+				console.log('me debo eliminar dropeo');
+				process.disconnect()
 			}
+			break;
 		case 'consumerRecibeMensajes':
 			if (consumidor == msg.idConsumer || !consumidor) {
 				if (mensajes.length > 0) {
-					console.log('debo entregar este mensaje ');
 					var mensaje = mensajes.shift();
-					console.log(mensaje);
+					console.log("Resto mensajes: ",mensajes.length)
 					process.send({ tipo: 'enviarMensaje', mensaje: mensaje, idConsumer: consumidor })
 				}
 			}
+			break;
 		default:
 			mensajes.push(msg);
-			console.log('tengo estos mensajes');
-			console.log(mensajes);
-
+			console.log("Sumo mensaje: ",mensajes.length)
 			if (mensajes.length >= 10) {
 				process.send({ tipo: 'FULL' })
 			}
