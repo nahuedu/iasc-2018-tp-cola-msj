@@ -108,7 +108,7 @@ process.on('message', msg => {
       })
     } else {
       topic.consumers.forEach(c => {
-        if (!c.working) {
+        if (!c.working && c.id == msg.idConsumer) {
           c.socket.emit('mensaje', { mensaje: msg.mensaje });
           c.working = true
         }
