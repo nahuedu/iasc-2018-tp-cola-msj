@@ -9,15 +9,17 @@ function socketClient() {
 	const socket = io(config.get('master.host'));
 
 	socket.on('connect', () => {
-	  socket.emit('conectar_topic', { topic });
+	  socket.emit('conectar_topic', { topic, idConsumer });
 	});
 
 	socket.on('disconnect', () => {
-		console.log("se fue")		  
+		console.log("se fue")
+		socketClient()
 	});
 
 	socket.on('status_topic', msg => {
 	  console.log(msg);
+	  idConsumer = msg.idConsumer
 	});
 
 	socket.on('mensaje', msg => {

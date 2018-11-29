@@ -2,8 +2,8 @@ const getTopic = require('./getTopic');
 
 module.exports = (msg, socket, statusManager) => {
   const consumer = {
-    id: statusManager.idsConsumers++,
-    socket: socket,
+    id: msg.idConsumer !== null ? msg.idConsumer : statusManager.idsConsumers++,
+    //socket: null,
     working: false
   };
 

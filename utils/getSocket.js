@@ -1,0 +1,1 @@
+module.exports = (id, sockets) => sockets.find(s => id == s.idConsumer);

@@ -5,9 +5,11 @@ const http = require('http').Server(app);
 const io = require('socket.io')(http);
 const newConsumer = require('./utils/newConsumer');
 const getTopic = require('./utils/getTopic');
+const getSocket = require('./utils/getSocket');
 io.origins('*:*');
 
 const puerto = 9000;
+var sockets = []
 
 var statusManager = {
   topics: [],
@@ -37,6 +39,7 @@ setInterval(() => {
           console.log(`connected: ${socket.id}`);
           socket.on('conectar_topic', msg => {
             idConsumer = newConsumer(msg, socket, statusManager);
+            sockets.push({idConsumer, socket})
           });
 
           socket.on('working', msg => {
@@ -139,14 +142,17 @@ function handleMessageOriginal(msg) {
     if (typeof msg.idConsumer !== 'number') {
       topic.consumers.forEach((c) => {
         if (!c.working) {
-          c.socket.emit('mensaje', { mensaje: msg.mensaje });
+          console.log("pase")
+          var socket = getSocket(c.id, sockets).socket
+          socket.emit('mensaje', { mensaje: msg.mensaje });
           c.working = true;
         }
       })
     } else {
       topic.consumers.forEach(c => {
         if (!c.working && c.id == msg.idConsumer) {
-          c.socket.emit('mensaje', { mensaje: msg.mensaje });
+          var socket = getSocket(c.id, sockets).socket
+          socket.emit('mensaje', { mensaje: msg.mensaje });
           c.working = true
         }
       })
