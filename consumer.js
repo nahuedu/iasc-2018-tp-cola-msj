@@ -1,33 +1,51 @@
 const io = require('socket.io-client');
-const config = require('config');
 const sleep = require('sleep');
 
-const topic = config.get('consumer.topic');
-var idConsumer = null;
 
-function socketClient() {
-	const socket = io(config.get('master.host'));
+class Consumer {
 
-	socket.on('connect', () => {
-	  socket.emit('conectar_topic', { topic, idConsumer });
-	});
+	constructor(topic, url){
+		this.topic = topic;
+		this.idConsumer = null;
+		this.socket = io(url);
+	}
 
-	socket.on('disconnect', () => {
+	socketClient() {
+
+		this.socket.on('connect', this.connect.bind(this));
+
+		this.socket.on('disconnect', this.disconnect.bind(this));
+
+		this.socket.on('status_topic', this.setIdConsumer.bind(this));
+
+		this.socket.on('mensaje', this.mensaje.bind(this));
+	}
+
+	mensaje(msg) {
+		console.log(msg.mensaje);
+		sleep.sleep(5);
+		this.socket.emit('working', { topic:this.topic, working: false });
+	}
+
+	disconnect() {
 		console.log("se fue")
-		socketClient()
-	});
+		this.socketClient()
+	}
 
-	socket.on('status_topic', msg => {
-	  console.log(msg);
-	  idConsumer = msg.idConsumer
-	});
+	connect() {
 
-	socket.on('mensaje', msg => {
-	  console.log(msg.mensaje);
-	  sleep.sleep(5);
-	  socket.emit('working', { topic, working: false });
-	});
+		this.socket.emit('conectar_topic', {
+			topic: this.topic,
+			consumerId: this.consumerId
+		});
+	}
+
+	setIdConsumer(msg) {
+		console.log(msg);
+		this.idConsumer = msg.idConsumer;
+	}
+
 }
 
 
-socketClient()
+module.exports = Consumer;

@@ -1,8 +1,5 @@
 {
-  "consumer": {
-    "topic": "topic_1"
-  },
-  "master": {
-    "host": "http://localhost:3000"
+  "manager": {
+    "consumers": "http://localhost:3000"
   }
 }
