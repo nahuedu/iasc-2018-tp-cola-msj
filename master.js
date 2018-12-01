@@ -45,15 +45,13 @@ class Manager {
     const idQueue = ++countQueue;
 
     const queue = new Queue(this, topic, idQueue, true, consumidor);
-    var nodo = queue.nodo
-    nodo.send({ tipo: "init", consumidor, original: true });
+    queue.nodo.send({ tipo: "init", consumidor, original: true });
 
     const queueReplica = new Queue(this, topic, idQueue, false, consumidor);
-    const replica = queueReplica.nodo
-    replica.send({ tipo: "init", consumidor, original: false });
+    queueReplica.nodo.send({ tipo: "init", consumidor, original: false });
 
-    console.log(`Queue creada: ${topic} nodo queue: ${nodo.pid} nodo replica: ${replica.pid}`);
-    this.queues.push({ idQueue, topic, nodo, replica });
+    console.log(`Queue creada: ${topic} nodo queue: ${queue.nodo.pid} nodo replica: ${queueReplica.nodo.pid}`);
+    this.queues.push({ idQueue, topic, original: queue, replica: queueReplica });
   }
 
   deleteQueue(topic, tipoCola, consumidor) {
@@ -64,15 +62,15 @@ class Manager {
   }
 
   sendMsg(topic, msg) {
-    this.queues.forEach(q => q.topic == topic && q.nodo.send(msg));
+    this.queues.forEach(q => q.topic == topic && q.original.nodo.send(msg));
   }
 
   consumerRecibeMensajes(topic, msg) {
-    this.queues.forEach(q => q.topic == topic && q.nodo.send(msg));
+    this.queues.forEach(q => q.topic == topic && q.original.nodo.send(msg));
   }
 
   removeConsumer(topic, msg) {
-    this.queues.forEach(q => q.topic == topic && q.nodo.send(msg));
+    this.queues.forEach(q => q.topic == topic && q.original.nodo.send(msg));
   }
 
   toReplica(msg) {
@@ -132,7 +130,7 @@ class Queue {
       case "toReplica":
         const replica = this.manager.nodoReplica(this.idQueue)
         if (replica)
-          replica.send({tipo, status})
+          replica.nodo.send({tipo, status})
         break;
       case "soyOriginal":
         this.original = true;
@@ -149,10 +147,20 @@ var managerReplica = new Manager(false);
 
 function managerKilled(original) {
   if (original) {
+
+     managerReplica.queues = managerOriginal.queues
+     managerReplica.queues.forEach( (q) => {
+      q.original.manager = managerReplica
+      q.replica.manager = managerReplica
+     })
+
      managerOriginal = managerReplica
      managerOriginal.original = true
      managerOriginal.nodo.send({tipo: "init", original: true})
   }
 
  managerReplica = new Manager(false)
+
+ console.log("Original",managerOriginal.nodo.pid)
+ console.log("Replica",managerReplica.nodo.pid)
 }
