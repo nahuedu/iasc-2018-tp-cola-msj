@@ -72,7 +72,7 @@ setInterval(() => {
         app.post('/send', (req, res) => {
           const { msg, topic } = req.body,
             existentTopic = getTopic(topic, statusManager.topics);
-          console.log(`req: ${req.body}\nrecibí: ${msg} al topico: ${topic}\nexistent topic: ${existentTopic}`);
+//          console.log(`req: ${req.body}\nrecibí: ${msg} al topico: ${topic}\nexistent topic: ${existentTopic}`);
           if (existentTopic) {
             if (existentTopic.lleno) {
               res.status(400).json({ success: false, msg: 'La cola con topico ' + topic + ' esta llena' });
@@ -106,6 +106,10 @@ setInterval(() => {
             res.send({ success: false, msg: 'El topic ' + topic + ' ya existe' });
           }
         });
+
+        app.get('/status', (req, res) => {
+          res.send(statusManager)
+        })
 
         /* FIN HTTP REST PARA PRODUCTORES */
 
@@ -142,7 +146,6 @@ function handleMessageOriginal(msg) {
     if (typeof msg.idConsumer !== 'number') {
       topic.consumers.forEach((c) => {
         if (!c.working) {
-          console.log("pase")
           var socket = getSocket(c.id, sockets).socket
           socket.emit('mensaje', { mensaje: msg.mensaje });
           c.working = true;
