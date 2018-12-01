@@ -33,6 +33,7 @@ setInterval(() => {
     if (statusManager.original && statusManager.initOriginal) {
         statusManager.initOriginal = false
 
+        console.log("Soy el nuevo manager original "+process.pid);
         /* SOCKET PARA QUE LOS CONSUMIDORES SE CONECTEN */
         io.on('connection', socket => {
           let idConsumer;
@@ -149,6 +150,10 @@ function handleMessageOriginal(msg) {
           var socket = getSocket(c.id, sockets).socket
           socket.emit('mensaje', { mensaje: msg.mensaje });
           c.working = true;
+
+          setTimeout( () => {
+            //si a los 10 segundos no confirmo accion, reencolar
+          }, 10000 ) 
         }
       })
     } else {
@@ -166,7 +171,7 @@ function handleMessageOriginal(msg) {
 function handleMessageReplica(msg) {
   switch(msg.tipo) {
     case "init":
-      console.log(msg)
+      console.log("Creo manager "+process.pid);
       statusManager.original = msg.original
       break;
     case 'toReplica':

@@ -1,3 +1,4 @@
+var MAXIMO = 1000
 var statusQueue = {
 	mensajes: [],
 	consumidor: null,
@@ -17,23 +18,27 @@ function handleMessageOriginal(msg) {
 	switch (msg.tipo) {
 		case "delete":
 			if (statusQueue.consumidor == msg.consumidor) {
-				console.log('me debo eliminar dropeo');
+				console.log("Soy queue "+process.pid+": Me debo eliminar");
 				process.disconnect()
+				process.exit()
 			}
 			break;
 		case 'consumerRecibeMensajes':
 			if (statusQueue.consumidor == msg.idConsumer || !statusQueue.consumidor) {
 				if (statusQueue.mensajes.length > 0) {
 					var mensaje = statusQueue.mensajes.shift();
-					console.log("Resto mensajes: ",statusQueue.mensajes.length)
+					console.log("Soy queue "+process.pid+": Resto mensaje: Tengo ",statusQueue.mensajes.length)
 					process.send({ tipo: 'enviarMensaje', mensaje: mensaje, idConsumer: statusQueue.consumidor })
+				}
+				if (statusQueue.mensajes.length  < MAXIMO) {
+					process.send({ tipo: 'AVAILABLE' })
 				}
 			}
 			break;
 		case 'sendMsg':
 			statusQueue.mensajes.push(msg.msg);
-			console.log("Sumo mensaje: ",statusQueue.mensajes.length)
-			if (statusQueue.mensajes.length >= 10) {
+			console.log("Soy queue "+process.pid+": Sumo mensaje: Tengo ",statusQueue.mensajes.length)
+			if (statusQueue.mensajes.length >= MAXIMO) {
 				process.send({ tipo: 'FULL' })
 			}
 			break;
@@ -46,15 +51,16 @@ function handleMessageReplica(msg) {
 	switch (msg.tipo) {
 		case "delete":
 			if (statusQueue.consumidor == msg.consumidor) {
-				console.log('me debo eliminar dropeo');
+				console.log("Soy queue "+process.pid+": Me debo eliminar");
 				process.disconnect()
+				process.exit()
 			}
 			break;
 		case 'init':
 			statusQueue.consumidor = msg.consumidor;
 			statusQueue.original = msg.original;
 			process.send({tipo: "soyOriginal" })  
-			console.log('Mi consumidor es ' + statusQueue.consumidor + ' y original es '+statusQueue.original);
+			console.log("Soy queue "+process.pid+": Mi consumidor es " + statusQueue.consumidor + ' y original es '+statusQueue.original);
 			break;
 		case 'toReplica':
 			statusQueue = msg.status
@@ -71,10 +77,11 @@ setInterval(() => {
 		}
 }, 10);
 
+/*
 setInterval(() => {
 	if (statusQueue.original){
 			console.log("Soy queue y mi status es:", statusQueue)
 		}
 }, 5000);
 
-
+*/

@@ -56,7 +56,7 @@ class Manager {
 
   deleteQueue(topic, tipoCola, consumidor) {
     if (tipoCola == "publicar_suscribir") {
-      this.queues.forEach(q => q.topic == topic && q.nodo.send({ tipo: "delete", consumidor }) && q.replica.send({ tipo: "delete", consumidor })  );
+      this.queues.forEach(q => q.topic == topic && q.original.nodo.send({ tipo: "delete", consumidor }) && q.replica.nodo.send({ tipo: "delete", consumidor })  );
       //this.queues.forEach(q => q.topic == topic && q.nodo.disconnect());
     };
   }
@@ -83,16 +83,16 @@ class Manager {
   }
   
   queueKilled(idQueue, original, consumidor)  {
-    const element = this.queues.find(q => q.idQueue == idQueue)
+    var element = this.queues.find(q => q.idQueue == idQueue)
 
     const queueReplica = new Queue(this, element.topic, idQueue, false, consumidor);
-    const replica = queueReplica.nodo
-    replica.send({ tipo: "init", consumidor, original: false });
+    const replica = queueReplica
+    replica.nodo.send({ tipo: "init", consumidor, original: false });
 
     if (original) {
       console.log("Cayo original, fue reemplazado")
-      element.nodo = element.replica
-      element.nodo.send({ tipo: "init", consumidor, original: true });
+      element.original = element.replica
+      element.original.nodo.send({ tipo: "init", consumidor, original: true });
     }
 
     console.log("Replica reemplazada")
@@ -122,6 +122,7 @@ class Queue {
   handleMessage({ tipo, topic, mensaje, idConsumer, status }) {
     switch (tipo) {
       case "FULL":
+      case "AVAILABLE":
         this.manager.nodo.send({ topic: this.topic, msg: tipo });
         break;
       case "enviarMensaje":
