@@ -3,27 +3,32 @@ const http = require('http');
 const conn = require('../utils/Connections');
 
 const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
+    input: process.stdin,
+    output: process.stdout
 });
 
-var puerto = conn.producerPort;
-var host = conn.host;
+const port = conn.producerPort;
+const hostname = conn.host;
 
-console.log(`Se creara una cola haciendo POST a ${host}:${puerto}/queue`);
+console.log(`Se creara una cola haciendo POST a ${hostname}:${port}/queue`);
 
-rl.question('Ingrese topic: ', (topic) => {
+rl.question('Ingrese topic: ', topic => {
 
-    rl.question('Ingrese tipo de cola, debe ser cola_de_trabajo o publicar_suscribir: ', (tipoCola) => {
-       
+    rl.question('Ingrese tipo de cola, debe ser cola_de_trabajo o publicar_suscribir: ', tipoCola => {
+
+        if (!['cola_de_trabajo', 'publicar_suscribir'].includes(tipoCola)) {
+            console.error(`Tipo de cola inválido: ${tipoCola}`);
+            process.exit();
+        }
+
         const postData = {
-            topic: topic,
-            tipoCola: tipoCola
+            topic,
+            tipoCola
         };
 
         const options = {
-            hostname: host,
-            port: puerto,
+            hostname,
+            port,
             path: '/queue',
             method: 'POST',
             headers: {
@@ -31,12 +36,10 @@ rl.question('Ingrese topic: ', (topic) => {
                 'cache-control': 'no-cache'
             }
         };
-        
-        const req = http.request(options, (res) => {
+
+        const req = http.request(options, res => {
             res.setEncoding('utf8');
-            res.on('data', (data) => {
-                console.log(data);
-            });
+            res.on('data', console.log);
         });
 
         req.write(JSON.stringify(postData));
