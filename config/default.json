@@ -1,5 +1,7 @@
 {
   "manager": {
-    "consumers": "http://localhost:3000"
+    "host": "localhost",
+    "consumer-port": 3000,
+    "producer-port": 9000
   }
 }

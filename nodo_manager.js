@@ -6,9 +6,9 @@ const io = require('socket.io')(http);
 const newConsumer = require('./utils/newConsumer');
 const getTopic = require('./utils/getTopic');
 const getSocket = require('./utils/getSocket');
+const conn = require('./utils/Connections');
 io.origins('*:*');
 
-const puerto = 9000;
 var sockets = []
 
 var statusManager = {
@@ -60,14 +60,14 @@ setInterval(() => {
 
         app.use(bodyParser.json()); // for parsing application/json
 
-        http.listen(3000, () => {
-          console.log('listening on *:3000');
+        http.listen({host:conn.host, port:conn.consumerPort}, () => {
+          console.log(`recibiendo conexiones de consumidores en ${conn.host}:${conn.consumerPort}`);
         });
         /* FIN SOCKET */
 
         /* HTTP REST PARA PRODUCTORES */
-        app.listen(puerto, () => {
-          console.log('nodo manager corriendo en el puerto 9000');
+        app.listen({host:conn.host, port:conn.producerPort}, () => {
+          console.log(`recibiendo conexiones de productores en ${conn.host}:${conn.producerPort}`);
         });
 
         app.post('/send', (req, res) => {

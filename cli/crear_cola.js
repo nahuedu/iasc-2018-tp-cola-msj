@@ -1,12 +1,16 @@
 const readline = require('readline');
 const http = require('http');
+const conn = require('../utils/Connections');
 
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-console.log('Se creara una cola haciendo POST a http://localhost:9000/queue');
+var puerto = conn.producerPort;
+var host = conn.host;
+
+console.log(`Se creara una cola haciendo POST a ${host}:${puerto}/queue`);
 
 rl.question('Ingrese topic: ', (topic) => {
 
@@ -18,8 +22,8 @@ rl.question('Ingrese topic: ', (topic) => {
         };
 
         const options = {
-            hostname: 'localhost',
-            port: 9000,
+            hostname: host,
+            port: puerto,
             path: '/queue',
             method: 'POST',
             headers: {
