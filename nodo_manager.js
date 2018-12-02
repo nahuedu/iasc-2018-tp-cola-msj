@@ -45,6 +45,7 @@ setInterval(() => {
 
           socket.on('working', msg => {
             const topic = getTopic(msg.topic, statusManager.topics);
+            console.log("Node processed message " + msg.msgId);
             topic && topic.consumers.forEach(c => {
               if (c.id == idConsumer) {
                 c.working = msg.working
@@ -78,7 +79,7 @@ setInterval(() => {
             if (existentTopic.lleno) {
               res.status(400).json({ success: false, msg: 'La cola con topico ' + topic + ' esta llena' });
             } else {
-              process.send({ tipo: 'sendMsg', topic: topic, msg: msg });
+              process.send({ tipo: 'sendMsg', topic: topic, msg: { msg: msg } } );
               res.json({ success: true, msg: 'Mensaje recibido' });
             }
           } else {

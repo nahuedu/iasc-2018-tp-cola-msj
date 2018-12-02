@@ -8,12 +8,19 @@ const rl = readline.createInterface({
   output: process.stdout
 });
 
+var topic,transactional;
+
 var managerUrl = `http://${conn.host}:${conn.consumerPort}`;
 
 console.log(`Se conectara un nuevo consumer a ${managerUrl}`);
 
-rl.question('Ingrese topic: ', (topic) => {
-
-    new Consumer(topic, managerUrl).socketClient();
-    
+rl.question('Ingrese topic: ', (topicAnswer) => {
+  topic = topicAnswer;
+  rl.question('Consumo transaccional? (y/n): ', (answer) => {
+    transactional = answer.toUpperCase() === 'Y' ? true : false;
+    new Consumer(topic, managerUrl,transactional).socketClient();  
+  });
 });
+
+
+

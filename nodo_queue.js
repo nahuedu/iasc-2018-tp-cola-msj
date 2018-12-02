@@ -1,3 +1,4 @@
+const uuidv4 = require('uuid/v4');
 var MAXIMO = 1000
 var statusQueue = {
 	mensajes: [],
@@ -27,6 +28,7 @@ function handleMessageOriginal(msg) {
 			if (statusQueue.consumidor == msg.idConsumer || !statusQueue.consumidor) {
 				if (statusQueue.mensajes.length > 0) {
 					var mensaje = statusQueue.mensajes.shift();
+					console.log(mensaje.id);
 					console.log("Soy queue "+process.pid+": Resto mensaje: Tengo ",statusQueue.mensajes.length)
 					process.send({ tipo: 'enviarMensaje', mensaje: mensaje, idConsumer: statusQueue.consumidor })
 				}
@@ -36,6 +38,7 @@ function handleMessageOriginal(msg) {
 			}
 			break;
 		case 'sendMsg':
+			msg.msg.id = uuidv4();
 			statusQueue.mensajes.push(msg.msg);
 			console.log("Soy queue "+process.pid+": Sumo mensaje: Tengo ",statusQueue.mensajes.length)
 			if (statusQueue.mensajes.length >= MAXIMO) {

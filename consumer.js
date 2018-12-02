@@ -4,9 +4,10 @@ const sleep = require('sleep');
 
 class Consumer {
 
-	constructor(topic, url){
+	constructor(topic, url, transactional){
 		this.topic = topic;
 		this.idConsumer = null;
+		this.transactional = transactional;
 		this.socket = io(url);
 	}
 
@@ -22,9 +23,21 @@ class Consumer {
 	}
 
 	mensaje(msg) {
+		console.log(msg.mensaje.id);
+		//Non Transactional consumption -> Emit the ACK before processing
+		if(!this.transactional){
+			this.socket.emit('working', { msgId: msg.mensaje.id, topic:this.topic, working: false });	
+		} 
+
+		//Simulates consumer processing
 		console.log(msg.mensaje);
-		sleep.sleep(5);
-		this.socket.emit('working', { topic:this.topic, working: false });
+		sleep.sleep(5); 
+		
+		//Transactional consumption -> Emit the ACK after processing, if successfull
+		if(this.transactional){
+			this.socket.emit('working', { msgId:msg.mensaje.id, topic:this.topic, working: false });	
+		}
+		
 	}
 
 	disconnect() {
