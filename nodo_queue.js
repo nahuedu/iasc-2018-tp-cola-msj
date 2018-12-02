@@ -28,7 +28,6 @@ function handleMessageOriginal(msg) {
 			if (statusQueue.consumidor == msg.idConsumer || !statusQueue.consumidor) {
 				if (statusQueue.mensajes.length > 0) {
 					var mensaje = statusQueue.mensajes.shift();
-					console.log(mensaje.id);
 					console.log("Soy queue "+process.pid+": Resto mensaje: Tengo ",statusQueue.mensajes.length)
 					process.send({ tipo: 'enviarMensaje', mensaje: mensaje, idConsumer: statusQueue.consumidor })
 				}
