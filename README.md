@@ -16,28 +16,18 @@ node master.js
 
 ### CREO UNA NUEVA COLA
 
-POST http://localhost:9000/queue
 ```
-{
-	"topic":"topic_1",
-	"tipoCola":"cola_de_trabajo"
-}
+node cli/crear_cola.js
 ```
 
 ### GUARDO MENSAJES
 
-POST http://localhost:9000/send
 ```
-{
-	"msg": {"data":"datadatadata"},
-	"topic": "topic_1"
-}
+node cli/enviar_mensajes.js
 ```
 
 
 ### CONECTO CONSUMIDOR
 ```
-export TOPIC=topic_1
-export MASTER=http://127.0.0.1:3000
-node consumer.js
+node cli/add_consumer.js
 ```
