@@ -1,1 +1,0 @@
-module.exports = (id, consumers) => consumers.find(c => id == c.id);

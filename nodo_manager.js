@@ -3,13 +3,11 @@ const bodyParser = require('body-parser');
 const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
-const newConsumer = require('./utils/newConsumer');
-const getTopic = require('./utils/getTopic');
-const getSocket = require('./utils/getSocket');
+const utils = require('./utils/Utils');
 const conn = require('./utils/Connections');
+const Topic = require('./entities/Topic');
+const Consumer = require('./entities/Consumer');
 io.origins('*:*');
-
-var sockets = []
 
 var statusManager = {
   topics: [],
@@ -17,7 +15,7 @@ var statusManager = {
   original: false,
   initOriginal: true,
 };
-
+const sockets = [];
 
 process.on('message', msg => {
   if (statusManager.original == true) {
@@ -30,103 +28,78 @@ process.on('message', msg => {
 
 
 setInterval(() => {
-    if (statusManager.original && statusManager.initOriginal) {
-        statusManager.initOriginal = false
+  if (statusManager.original && statusManager.initOriginal) {
+    statusManager.initOriginal = false
 
-        console.log("Soy el nuevo manager original "+process.pid);
-        /* SOCKET PARA QUE LOS CONSUMIDORES SE CONECTEN */
-        io.on('connection', socket => {
-          let idConsumer;
-          console.log(`connected: ${socket.id}`);
-          socket.on('conectar_topic', msg => {
-            idConsumer = newConsumer(msg, socket, statusManager);
-            sockets.push({idConsumer, socket})
-          });
+    console.log("Soy el nuevo manager original -> pid: " + process.pid);
+    /* SOCKET PARA QUE LOS CONSUMIDORES SE CONECTEN */
+    io.on('connection', socket => {
+      console.log(`connected: ${socket.id}`);
+      socket.on('conectar_topic', msg => {
+        var idConsumer = newConsumer(msg.topicTitle, msg.idConsumer, socket, statusManager);
+        sockets.push({ idConsumer, socket });
+        process.send({tipo:'addConsumer', idConsumer: idConsumer, topicTitle:msg.topicTitle});
+      });
+    });
 
-          socket.on('working', msg => {
-            const topic = getTopic(msg.topic, statusManager.topics);
-            topic && topic.consumers.forEach(c => {
-              if (c.id == idConsumer) {
-                c.working = msg.working
-              }
-            });
-          });
+    app.use(bodyParser.json()); // for parsing application/json
 
-          socket.on('disconnect', () => {
-            console.log(`disconnected: ${idConsumer}`);
-            process.send({ tipo: 'removeConsumer', consumer: idConsumer });
-          })
-        });
+    http.listen({ host: conn.host, port: conn.consumerPort }, () => {
+      console.log(`recibiendo conexiones de consumidores en ${conn.host}:${conn.consumerPort}`);
+    });
+    /* FIN SOCKET */
 
-        app.use(bodyParser.json()); // for parsing application/json
+    /* HTTP REST PARA PRODUCTORES */
+    app.listen({ host: conn.host, port: conn.producerPort }, () => {
+      console.log(`recibiendo conexiones de productores en ${conn.host}:${conn.producerPort}`);
+    });
 
-        http.listen({host:conn.host, port:conn.consumerPort}, () => {
-          console.log(`recibiendo conexiones de consumidores en ${conn.host}:${conn.consumerPort}`);
-        });
-        /* FIN SOCKET */
-
-        /* HTTP REST PARA PRODUCTORES */
-        app.listen({host:conn.host, port:conn.producerPort}, () => {
-          console.log(`recibiendo conexiones de productores en ${conn.host}:${conn.producerPort}`);
-        });
-
-        app.post('/send', (req, res) => {
-          const { msg, topic } = req.body,
-            existentTopic = getTopic(topic, statusManager.topics);
-//          console.log(`req: ${req.body}\nrecibí: ${msg} al topico: ${topic}\nexistent topic: ${existentTopic}`);
-          if (existentTopic) {
-            if (existentTopic.lleno) {
-              res.status(400).json({ success: false, msg: 'La cola con topico ' + topic + ' esta llena' });
-            } else {
-              process.send({ tipo: 'sendMsg', topic: topic, msg: msg });
-              res.json({ success: true, msg: 'Mensaje recibido' });
-            }
-          } else {
-            res.status(404).json({ success: false, msg: 'Topic no encontrado' });
-          }
-        });
-
-        app.post('/queue', (req, res) => {
-          const { topic, tipoCola } = req.body;
-
-          if (!getTopic(topic, statusManager.topics)) {
-            if (tipoCola == 'cola_de_trabajo') {
-              process.send({ tipo: 'createQueue', topic, tipoCola, idConsumer: null });
-            }
-
-            statusManager.topics.push({
-              topic,
-              tipoCola,
-              lleno: false,
-              consumers: [],
-            });
-
-            res.send({ success: true, msg: 'Cola creada con el topic ' + topic });
-          }
-          else {
-            res.send({ success: false, msg: 'El topic ' + topic + ' ya existe' });
-          }
-        });
-
-        app.get('/status', (req, res) => {
-          res.send(statusManager)
-        })
-
-        /* FIN HTTP REST PARA PRODUCTORES */
-
-        /* LOOP REPARTE MENSAJES */
-        setInterval(() => {
-          statusManager.topics.forEach(topic => {
-            topic.consumers.forEach(consumer => {
-              if (!consumer.working) {
-                process.send({ tipo: 'consumerRecibeMensajes', topic: topic.topic, idConsumer: consumer.id });
-              }
-            })
-          })
-        }, 10);
-        /* FIN LOOP */
+    app.post('/send', (req, res) => {
+      const { msg, topicTitle } = req.body;
+      const existentTopic = utils.getTopic(topicTitle, statusManager.topics);
+      
+      if (existentTopic) {
+        if (existentTopic.lleno) {
+          res.status(400).json({ success: false, msg: 'La cola con topico ' + topicTitle + ' esta llena' });
+        } else {
+          process.send({ tipo: 'sendMsg', topicTitle, msg });
+          res.json({ success: true, msg: 'Mensaje recibido' });
+        }
+      } else {
+        res.status(404).json({ success: false, msg: 'Topic no encontrado' });
       }
-    }, 1000
+    });
+
+    app.post('/queue', (req, res) => {
+      const { topicTitle, tipoCola } = req.body;
+
+      if (!utils.getTopic(topicTitle, statusManager.topics)) {
+        if (tipoCola == 'cola_de_trabajo') {
+          process.send({ tipo: 'createQueue', topicTitle, tipoCola, idConsumer: null });
+        }
+
+        statusManager.topics.push(new Topic(topicTitle, tipoCola));
+
+        res.send({ success: true, msg: 'Cola creada con el topic ' + topicTitle });
+      }
+      else {
+        res.send({ success: false, msg: 'El topic ' + topicTitle + ' ya existe' });
+      }
+    });
+
+    app.get('/status', (req, res) => {
+      res.send(statusManager)
+    })
+
+    /* FIN HTTP REST PARA PRODUCTORES */
+
+    /* LOOP REPARTE MENSAJES */
+    setInterval(() => {
+      statusManager.topics.forEach(topic => topic.sendMessages(process))
+    }, 10);
+    /* FIN LOOP */
+  }
+}, 1000
 );
 
 
@@ -136,35 +109,16 @@ function handleMessageOriginal(msg) {
       statusManager.original = msg.original
   }
   else if (msg.msg == 'FULL') {
-    let topic = getTopic(msg.topic, statusManager.topics);
-    topic.lleno = true;
+    let topic = utils.getTopic(msg.topicTitle, statusManager.topics);
+    topic.llenate();
   }
   else if (msg.msg == 'AVAILABLE') {
-    let topic = getTopic(msg.topic, statusManager.topics);
-    topic.lleno = false;
+    let topic = utils.getTopic(msg.topicTitle, statusManager.topics);
+    topic.vaciate();
   } else if (msg.tipo == 'enviarMensaje') {
-    const topic = getTopic(msg.topic, statusManager.topics);
-    if (typeof msg.idConsumer !== 'number') {
-      topic.consumers.forEach((c) => {
-        if (!c.working) {
-          var socket = getSocket(c.id, sockets).socket
-          socket.emit('mensaje', { mensaje: msg.mensaje });
-          c.working = true;
-
-          setTimeout( () => {
-            //si a los 10 segundos no confirmo accion, reencolar
-          }, 10000 ) 
-        }
-      })
-    } else {
-      topic.consumers.forEach(c => {
-        if (!c.working && c.id == msg.idConsumer) {
-          var socket = getSocket(c.id, sockets).socket
-          socket.emit('mensaje', { mensaje: msg.mensaje });
-          c.working = true
-        }
-      })
-    }
+    const topic = utils.getTopic(msg.topicTitle, statusManager.topics);
+    var socket = utils.getConsumerSocket(msg.idConsumer, sockets)
+    topic.emitirMensaje(msg, socket);
   }
 }
 
@@ -186,7 +140,37 @@ function handleMessageReplica(msg) {
 
 
 setInterval(() => {
-  if (statusManager.original){
-      process.send({tipo: "toReplica", status: statusManager })  
-    }
+  if (statusManager.original) {
+    process.send({ tipo: "toReplica", status: statusManager })
+  }
 }, 1000);
+
+
+
+
+function newConsumer(topicTitle, idConsumer, socket, statusManager) {
+
+  const topic = utils.getTopic(topicTitle, statusManager.topics);
+
+  if (topic) {
+    var consumer = topic.getConsumerById(idConsumer);
+    var newConsumer = false;
+
+    if (!consumer) {
+      consumer = new Consumer(idConsumer, statusManager, socket, topic);
+      newConsumer = true;
+    }
+
+    consumer.notWorking();
+
+    if (newConsumer == true) {
+      console.log(`Voy a insertar consumer con id ${consumer.id}`);
+      topic.addConsumer(consumer);
+    }
+    socket.emit('status_topic', { success: true , idConsumer: consumer.id});
+  } else {
+    socket.emit('status_topic', { success: false, message: "No existe el topic " + topicTitle });
+  }
+
+  return consumer.id;
+};

@@ -12,12 +12,12 @@ var host = conn.host;
 
 console.log(`Se enviara un mensaje haciendo POST a ${host}:${puerto}/send`);
 
-rl.question('Ingrese topic: ', (topic) => {
+rl.question('Ingrese topic: ', (topicTitle) => {
 
     rl.question('Ingrese el mensaje: ', (mensaje) => {
        
         const postData = {
-            topic: topic,
+            topicTitle: topicTitle,
             msg: mensaje
         };
 

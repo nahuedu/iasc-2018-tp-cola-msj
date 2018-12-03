@@ -18,59 +18,62 @@ class Manager {
     });
   }
 
-  handleMessage({ tipo, topic, tipoCola, idConsumer, msg, status }) {
+  handleMessage({ tipo, topicTitle, tipoCola, idConsumer, msg, status }) {
     switch (tipo) {
       case "createQueue":
-        this.createQueue(topic, tipoCola, idConsumer);
+        this.createQueue(topicTitle, tipoCola, idConsumer);
         break;
       case "deleteQueue":
-        this.deleteQueue(topic, tipoCola, idConsumer);
+        this.deleteQueue(topicTitle, tipoCola, idConsumer);
         break;
       case "sendMsg":
-        this.sendMsg(topic, { tipo, topic, tipoCola, idConsumer, msg });
+        this.sendMsg(topicTitle, { tipo, topicTitle, tipoCola, idConsumer, msg });
         break;
       case "consumerRecibeMensajes":
-        this.consumerRecibeMensajes(topic, { tipo, topic, tipoCola, idConsumer, msg });
+        this.consumerRecibeMensajes(topicTitle, { tipo, topicTitle, tipoCola, idConsumer, msg });
         break;
       case "removeConsumer":
-        this.removeConsumer(topic, msg);
+        this.removeConsumer(topicTitle, msg);
         break;
       case "toReplica":
         this.toReplica({ tipo, status });
         break;
+      case "addConsumer":
+        this.queues.forEach(q => q.topicTitle == topicTitle && q.original.nodo.send({tipo, idConsumer, topicTitle}));
+        break;
     }
   };
 
-  createQueue(topic, tipo, consumidor) {
+  createQueue(topicTitle, tipo, consumidor) {
     const idQueue = ++countQueue;
 
-    const queue = new Queue(this, topic, idQueue, true, consumidor);
+    const queue = new Queue(this, topicTitle, idQueue, true, consumidor);
     queue.nodo.send({ tipo: "init", consumidor, original: true });
 
-    const queueReplica = new Queue(this, topic, idQueue, false, consumidor);
+    const queueReplica = new Queue(this, topicTitle, idQueue, false, consumidor);
     queueReplica.nodo.send({ tipo: "init", consumidor, original: false });
 
-    console.log(`Queue creada: ${topic} nodo queue: ${queue.nodo.pid} nodo replica: ${queueReplica.nodo.pid}`);
-    this.queues.push({ idQueue, topic, original: queue, replica: queueReplica });
+    console.log(`Queue creada: ${topicTitle} nodo queue: ${queue.nodo.pid} nodo replica: ${queueReplica.nodo.pid}`);
+    this.queues.push({ idQueue, topicTitle, original: queue, replica: queueReplica });
   }
 
-  deleteQueue(topic, tipoCola, consumidor) {
+  deleteQueue(topicTitle, tipoCola, consumidor) {
     if (tipoCola == "publicar_suscribir") {
-      this.queues.forEach(q => q.topic == topic && q.original.nodo.send({ tipo: "delete", consumidor }) && q.replica.nodo.send({ tipo: "delete", consumidor })  );
+      this.queues.forEach(q => q.topicTitle == topicTitle && q.original.nodo.send({ tipo: "delete", consumidor }) && q.replica.nodo.send({ tipo: "delete", consumidor })  );
       //this.queues.forEach(q => q.topic == topic && q.nodo.disconnect());
     };
   }
 
-  sendMsg(topic, msg) {
-    this.queues.forEach(q => q.topic == topic && q.original.nodo.send(msg));
+  sendMsg(topicTitle, msg) {
+    this.queues.forEach(q => q.topicTitle == topicTitle && q.original.nodo.send(msg));
   }
 
-  consumerRecibeMensajes(topic, msg) {
-    this.queues.forEach(q => q.topic == topic && q.original.nodo.send(msg));
+  consumerRecibeMensajes(topicTitle, msg) {
+    this.queues.forEach(q => q.topicTitle == topicTitle && q.original.nodo.send(msg));
   }
 
-  removeConsumer(topic, msg) {
-    this.queues.forEach(q => q.topic == topic && q.original.nodo.send(msg));
+  removeConsumer(topicTitle, msg) {
+    this.queues.forEach(q => q.topicTitle == topicTitle && q.original.nodo.send(msg));
   }
 
   toReplica(msg) {
@@ -85,7 +88,7 @@ class Manager {
   queueKilled(idQueue, original, consumidor)  {
     var element = this.queues.find(q => q.idQueue == idQueue)
 
-    const queueReplica = new Queue(this, element.topic, idQueue, false, consumidor);
+    const queueReplica = new Queue(this, element.topicTitle, idQueue, false, consumidor);
     const replica = queueReplica
     replica.nodo.send({ tipo: "init", consumidor, original: false });
 
@@ -101,9 +104,9 @@ class Manager {
 }
 
 class Queue {
-  constructor(manager, topic, idQueue, original, consumidor) {
+  constructor(manager, topicTitle, idQueue, original, consumidor) {
     this.idQueue = idQueue;
-    this.topic = topic;
+    this.topicTitle = topicTitle;
     this.manager = manager;
     this.original = original;
     this.nodo = fork("nodo_queue.js");
@@ -119,14 +122,14 @@ class Queue {
     this.nodo.on('error', (err) => {});
   }
 
-  handleMessage({ tipo, topic, mensaje, idConsumer, status }) {
+  handleMessage({ tipo, topicTitle, mensaje, idConsumer, status }) {
     switch (tipo) {
       case "FULL":
       case "AVAILABLE":
-        this.manager.nodo.send({ topic: this.topic, msg: tipo });
+        this.manager.nodo.send({ topicTitle: this.topicTitle, msg: tipo });
         break;
       case "enviarMensaje":
-        this.manager.nodo.send({ topic: this.topic, tipo, mensaje, idConsumer });
+        this.manager.nodo.send({ topicTitle: this.topicTitle, tipo, mensaje, idConsumer });
         break;
       case "toReplica":
         const replica = this.manager.nodoReplica(this.idQueue)
@@ -137,7 +140,7 @@ class Queue {
         this.original = true;
         break;
       default:
-        console.log({ tipo, topic, mensaje, idConsumer }, "mensaje error handle manager")
+        console.log({ tipo, topicTitle, mensaje, idConsumer }, "mensaje error handle manager")
         throw new Error("Invalid message type.");
     }
   }

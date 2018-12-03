@@ -21,6 +21,6 @@ sh -c "curl -X POST \
   -H 'Content-Type: application/json' \
   -H 'cache-control: no-cache' \
   -d '{
-	\"topic\":\"$TOPIC\",
+	\"topicTitle\":\"$TOPIC\",
 	\"tipoCola\":\"$TIPO\"
 }'; echo -n;"

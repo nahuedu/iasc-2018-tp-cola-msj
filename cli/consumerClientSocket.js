@@ -2,10 +2,10 @@ const io = require('socket.io-client');
 const sleep = require('sleep');
 
 
-class Consumer {
+class ConsumerClientSocket {
 
-	constructor(topic, url){
-		this.topic = topic;
+	constructor(topicTitle, url){
+		this.topicTitle = topicTitle;
 		this.idConsumer = null;
 		this.socket = io(url);
 	}
@@ -24,7 +24,7 @@ class Consumer {
 	mensaje(msg) {
 		console.log(msg.mensaje);
 		sleep.sleep(5);
-		this.socket.emit('working', { topic:this.topic, working: false });
+		this.socket.emit('working', { topicTitle:this.topicTitle, working: false });
 	}
 
 	disconnect() {
@@ -35,17 +35,21 @@ class Consumer {
 	connect() {
 
 		this.socket.emit('conectar_topic', {
-			topic: this.topic,
-			consumerId: this.consumerId
+			topicTitle: this.topicTitle,
+			consumerId: this.idConsumer
 		});
 	}
 
 	setIdConsumer(msg) {
-		console.log(msg);
-		this.idConsumer = msg.idConsumer;
+		if(msg.success) {
+			console.log(`conectado! mi id es ${msg.idConsumer}`);
+			this.idConsumer = msg.idConsumer;
+		}
+		else
+			console.log(msg.message);
 	}
 
 }
 
 
-module.exports = Consumer;
+module.exports = ConsumerClientSocket;

@@ -1,1 +1,0 @@
-module.exports = (topic, topics) => topics.find(t => topic == t.topic);

@@ -30,7 +30,7 @@ while [ $HASTA -ge $DESDE ]; do
   -H 'cache-control: no-cache' \
   -d '{
 	\"msg\": {\"data\":\"Mensaje numero $DESDE\"},
-	\"topic\": \"$TOPIC\"
+	\"topicTitle\": \"$TOPIC\"
 }
 ';echo -n;"
   ((DESDE++))

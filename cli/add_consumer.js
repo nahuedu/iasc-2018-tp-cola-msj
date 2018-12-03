@@ -1,6 +1,5 @@
 const readline = require('readline');
-const config = require('config');
-const Consumer = require('../consumer');
+const ConsumerClientSocket = require('./consumerClientSocket');
 const conn = require('../utils/Connections');
 
 const rl = readline.createInterface({
@@ -12,8 +11,8 @@ var managerUrl = `http://${conn.host}:${conn.consumerPort}`;
 
 console.log(`Se conectara un nuevo consumer a ${managerUrl}`);
 
-rl.question('Ingrese topic: ', (topic) => {
+rl.question('Ingrese topic: ', (topicTitle) => {
 
-    new Consumer(topic, managerUrl).socketClient();
+    new ConsumerClientSocket(topicTitle, managerUrl).socketClient();
     
 });

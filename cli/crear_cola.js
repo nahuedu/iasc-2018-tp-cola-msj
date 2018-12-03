@@ -12,12 +12,12 @@ var host = conn.host;
 
 console.log(`Se creara una cola haciendo POST a ${host}:${puerto}/queue`);
 
-rl.question('Ingrese topic: ', (topic) => {
+rl.question('Ingrese topic: ', (topicTitle) => {
 
     rl.question('Ingrese tipo de cola, debe ser cola_de_trabajo o publicar_suscribir: ', (tipoCola) => {
        
         const postData = {
-            topic: topic,
+            topicTitle: topicTitle,
             tipoCola: tipoCola
         };
 
