@@ -5,7 +5,7 @@ class Utils {
     }
 
     getConsumerSocket(id, sockets){
-        return sockets.find(socket => id == socket.idConsumer);
+        return sockets.find(reg => id == reg.idConsumer).socket;
     }
 
 }

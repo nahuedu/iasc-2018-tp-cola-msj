@@ -15,7 +15,7 @@ var statusManager = {
   original: false,
   initOriginal: true,
 };
-const sockets = [];
+const socketsConsumers = [];
 
 process.on('message', msg => {
   if (statusManager.original == true) {
@@ -37,7 +37,7 @@ setInterval(() => {
       console.log(`connected: ${socket.id}`);
       socket.on('conectar_topic', msg => {
         var idConsumer = newConsumer(msg.topicTitle, msg.idConsumer, socket, statusManager);
-        sockets.push({ idConsumer, socket });
+        socketsConsumers.push({ idConsumer, socket });
         process.send({tipo:'addConsumer', idConsumer: idConsumer, topicTitle:msg.topicTitle});
       });
     });
@@ -75,7 +75,7 @@ setInterval(() => {
 
       if (!utils.getTopic(topicTitle, statusManager.topics)) {
         if (tipoCola == 'cola_de_trabajo') {
-          process.send({ tipo: 'createQueue', topicTitle, tipoCola, idConsumer: null });
+          process.send({ tipo: 'createQueue', topicTitle, tipoCola });
         }
 
         statusManager.topics.push(new Topic(topicTitle, tipoCola));
@@ -117,7 +117,7 @@ function handleMessageOriginal(msg) {
     topic.vaciate();
   } else if (msg.tipo == 'enviarMensaje') {
     const topic = utils.getTopic(msg.topicTitle, statusManager.topics);
-    var socket = utils.getConsumerSocket(msg.idConsumer, sockets)
+    var socket = utils.getConsumerSocket(msg.idConsumer, socketsConsumers)
     topic.emitirMensaje(msg, socket);
   }
 }

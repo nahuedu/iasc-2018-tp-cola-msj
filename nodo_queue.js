@@ -57,7 +57,6 @@ function handleMessageReplica(msg) {
 			deleteQueue(msg);
 			break;
 		case 'init':
-			statusQueue.consumidores = [msg.consumidor];
 			statusQueue.original = msg.original;
 			process.send({tipo: "soyOriginal" })  
 			console.log("Soy queue "+process.pid+": Mi consumidor es " + statusQueue.consumidores + ' y original es '+statusQueue.original);

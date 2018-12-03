@@ -21,7 +21,7 @@ class Manager {
   handleMessage({ tipo, topicTitle, tipoCola, idConsumer, msg, status }) {
     switch (tipo) {
       case "createQueue":
-        this.createQueue(topicTitle, tipoCola, idConsumer);
+        this.createQueue(topicTitle, tipoCola);
         break;
       case "deleteQueue":
         this.deleteQueue(topicTitle, tipoCola, idConsumer);
@@ -44,14 +44,14 @@ class Manager {
     }
   };
 
-  createQueue(topicTitle, tipo, consumidor) {
+  createQueue(topicTitle, tipo) {
     const idQueue = ++countQueue;
 
-    const queue = new Queue(this, topicTitle, idQueue, true, consumidor);
-    queue.nodo.send({ tipo: "init", consumidor, original: true });
+    const queue = new Queue(this, topicTitle, idQueue, true);
+    queue.nodo.send({ tipo: "init", original: true });
 
-    const queueReplica = new Queue(this, topicTitle, idQueue, false, consumidor);
-    queueReplica.nodo.send({ tipo: "init", consumidor, original: false });
+    const queueReplica = new Queue(this, topicTitle, idQueue, false);
+    queueReplica.nodo.send({ tipo: "init", original: false });
 
     console.log(`Queue creada: ${topicTitle} nodo queue: ${queue.nodo.pid} nodo replica: ${queueReplica.nodo.pid}`);
     this.queues.push({ idQueue, topicTitle, original: queue, replica: queueReplica });
@@ -85,17 +85,17 @@ class Manager {
     return element.replica
   }
   
-  queueKilled(idQueue, original, consumidor)  {
+  queueKilled(idQueue, original)  {
     var element = this.queues.find(q => q.idQueue == idQueue)
 
-    const queueReplica = new Queue(this, element.topicTitle, idQueue, false, consumidor);
+    const queueReplica = new Queue(this, element.topicTitle, idQueue, false);
     const replica = queueReplica
-    replica.nodo.send({ tipo: "init", consumidor, original: false });
+    replica.nodo.send({ tipo: "init", original: false });
 
     if (original) {
       console.log("Cayo original, fue reemplazado")
       element.original = element.replica
-      element.original.nodo.send({ tipo: "init", consumidor, original: true });
+      element.original.nodo.send({ tipo: "init", original: true });
     }
 
     console.log("Replica reemplazada")
@@ -104,7 +104,7 @@ class Manager {
 }
 
 class Queue {
-  constructor(manager, topicTitle, idQueue, original, consumidor) {
+  constructor(manager, topicTitle, idQueue, original) {
     this.idQueue = idQueue;
     this.topicTitle = topicTitle;
     this.manager = manager;
@@ -116,7 +116,7 @@ class Queue {
       console.log("close with code",code); 
       if (code == null) {
         console.log("Queue "+this.idQueue+" was killed. Original: "+ this.original)
-        this.manager.queueKilled(this.idQueue, this.original, consumidor)
+        this.manager.queueKilled(this.idQueue, this.original)
       }
     });
     this.nodo.on('error', (err) => {});

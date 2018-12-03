@@ -18,8 +18,7 @@ class Topic {
     }
 
     emitirMensaje(msg, socket) {
-        var consumer = this.consumers.find(c => c.id = msg.idConsumer);
-        console.log(this.consumers);
+        var consumer = this.consumers.find(c => c.id == msg.idConsumer);
         consumer.sendMessageToSocket(msg, socket);
     }
 
