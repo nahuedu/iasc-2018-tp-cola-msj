@@ -31,10 +31,11 @@ function handleMessageOriginal(msg) {
 			}
 			break;
 		case "removeConsumer":
-			removeConsumer(msg.topic, msg.tipoCola, msg.idConsumer);
+			removeConsumer(msg.idConsumer);
 			break;
 		case "addConsumer":
 			console.log(`agregado consumer con id ${msg.idConsumer}`);
+			
 			statusQueue.consumidores.push(msg.idConsumer);
 			break;
 		default:
@@ -42,13 +43,8 @@ function handleMessageOriginal(msg) {
 	}
 }
 
-function removeConsumer(topic, tipoCola, idConsumer) { //Este mensaje lo reciben las colas de trabajo
-	statusQueue.consumidores = statusQueue.consumidores.filter(c => c.id !== idConsumer);
-	if(statusQueue.consumidores.length == 0){
-		console.log("Soy queue "+process.pid+": se fue mi ultimo consumidor por lo tanto me elimino");
-		process.disconnect()
-		process.exit()
-	}
+function removeConsumer(idConsumer) { //Este mensaje lo reciben las colas de trabajo
+	statusQueue.consumidores = statusQueue.consumidores.filter(c => c !== idConsumer);
 }
 
 function handleMessageReplica(msg) {

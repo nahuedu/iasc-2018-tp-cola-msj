@@ -33,7 +33,7 @@ class Manager {
         this.consumerRecibeMensajes(topicTitle, { tipo, topicTitle, tipoCola, idConsumer, msg });
         break;
       case "removeConsumer":
-        this.removeConsumer(topicTitle, msg);
+        this.removeConsumer(tipo, idConsumer, topicTitle);
         break;
       case "toReplica":
         this.toReplica({ tipo, status });
@@ -72,8 +72,8 @@ class Manager {
     this.queues.forEach(q => q.topicTitle == topicTitle && q.original.nodo.send(msg));
   }
 
-  removeConsumer(topicTitle, msg) {
-    this.queues.forEach(q => q.topicTitle == topicTitle && q.original.nodo.send(msg));
+  removeConsumer(tipo, idConsumer, topicTitle) {
+    this.queues.forEach(q => q.topicTitle == topicTitle && q.original.nodo.send({tipo, idConsumer}));
   }
 
   toReplica(msg) {

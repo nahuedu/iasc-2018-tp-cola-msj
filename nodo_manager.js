@@ -117,7 +117,8 @@ function handleMessageOriginal(msg) {
     topic.vaciate();
   } else if (msg.tipo == 'enviarMensaje') {
     const topic = utils.getTopic(msg.topicTitle, statusManager.topics);
-    var socket = utils.getConsumerSocket(msg.idConsumer, socketsConsumers)
+    var socket = utils.getConsumerSocket(msg.idConsumer, socketsConsumers);
+    console.log('se enviara un mensaje al socket ' + socket.id)
     topic.emitirMensaje(msg, socket);
   }
 }

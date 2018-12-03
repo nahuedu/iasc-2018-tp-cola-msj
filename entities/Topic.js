@@ -41,6 +41,10 @@ class Topic {
             }
         });
     }
+
+    deleteConsumer(consumer){
+        this.consumers = this.consumers.filter(c => c.id !== consumer.id);
+    }
 }
 
 

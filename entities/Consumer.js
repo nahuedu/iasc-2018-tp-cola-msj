@@ -20,7 +20,8 @@ class Consumer {
         if (topic.tipoCola == 'cola_de_trabajo') {
             socket.on('disconnect', () => {
                 console.log(`disconnected: ${this.id}`);
-                process.send({ tipo: "removeConsumer", topic: topic.topicTitle, tipoCola: topic.tipoCola, idConsumer: this.id });
+                topic.deleteConsumer(this);
+                process.send({ tipo: "removeConsumer", topicTitle: topic.topicTitle, tipoCola: topic.tipoCola, idConsumer: this.id });
             });
         }
     }
