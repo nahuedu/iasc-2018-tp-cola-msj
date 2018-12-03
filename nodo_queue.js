@@ -58,7 +58,8 @@ function handleMessageReplica(msg) {
 		case 'init':
 			statusQueue.consumidor = msg.consumidor;
 			statusQueue.original = msg.original;
-			process.send({ tipo: "soyOriginal" });
+			if (msg.original)
+				process.send({ tipo: "soyOriginal" });
 			console.log(`Soy queue ${process.pid}: Mi consumidor es ${statusQueue.consumidor} y original es ${statusQueue.original}`);
 			break;
 		case 'toReplica':

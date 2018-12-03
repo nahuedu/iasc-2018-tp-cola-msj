@@ -28,15 +28,13 @@ class Consumer {
 	}
 
 	disconnect() {
-		console.log("se fue")
-		this.socketClient()
+		console.log("Se desconecto")
 	}
 
 	connect() {
-
 		this.socket.emit('conectar_topic', {
 			topic: this.topic,
-			consumerId: this.consumerId
+			idConsumer: this.idConsumer
 		});
 	}
 

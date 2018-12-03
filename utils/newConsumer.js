@@ -3,17 +3,18 @@ const getConsumerById = require('./getConsumerById');
 
 module.exports = (msg, socket, statusManager) => {
   const topic = getTopic(msg.topic, statusManager.topics);
-  let consumer = {}, newConsumer = false;
+  var consumer = {}
+  var newConsumer = false;
 
   if (topic) {
     consumer = getConsumerById(msg.idConsumer, topic.consumers);
-
-    if (!consumer) {
+    if (consumer == null ) { 
       consumer = {
-        id: msg.idConsumer !== null ? msg.idConsumer : statusManager.idsConsumers++,
+        id: msg.idConsumer ? msg.idConsumer : statusManager.idsConsumers++,
       };
       newConsumer = true;
     }
+
 
     consumer.working = false;
 
@@ -24,10 +25,12 @@ module.exports = (msg, socket, statusManager) => {
       });
     }
 
+
     if (newConsumer) {
       console.log(`Voy a insertar consumer ${newConsumer}`);
       topic.consumers.push(consumer);
-    }
+    } 
+
     socket.emit('status_topic', { success: true, idConsumer: consumer.id });
   } else {
     socket.emit('status_topic', { success: false, message: "No existe el topic " + msg.topic });

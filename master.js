@@ -88,8 +88,8 @@ class Manager {
     const replica = queueReplica;
     replica.nodo.send({ tipo: "init", consumidor, original: false });
 
+    console.log(original)
     if (original) {
-      console.log("Cayo original, fue reemplazado");
       element.original = element.replica;
       element.original.nodo.send({ tipo: "init", consumidor, original: true });
     }

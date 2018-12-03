@@ -36,6 +36,7 @@ setInterval(() => {
       console.log(`connected: ${socket.id}`);
       socket.on('conectar_topic', msg => {
         idConsumer = newConsumer(msg, socket, statusManager);
+        
         sockets.push({ idConsumer, socket });
       });
 
