@@ -17,17 +17,17 @@ node master.js
 ### CREO UNA NUEVA COLA
 
 ```
-node cli/crear_cola.js
+node cli/crear_cola.js --topic TOPIC --tipoCola [cola_de_trabajo|publicar_suscribir]
 ```
 
 ### GUARDO MENSAJES
 
 ```
-node cli/enviar_mensajes.js
+node cli/enviar_mensajes.js --topic TOPIC --msg MSG
 ```
 
 
 ### CONECTO CONSUMIDOR
 ```
-node cli/add_consumer.js
+node cli/add_consumer.js --topic TOPIC
 ```
