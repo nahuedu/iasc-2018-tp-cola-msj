@@ -9,7 +9,8 @@ class Consumer {
             this.setWorking(msg.working);
         });
 
-        if (topic.tipoCola == 'publicar_suscribir') {
+        if (topic.tipoCola === 'publicar_suscribir') {
+            console.log(`Creando cola pub_sub con nombre: `, topic);
             process.send({ tipo: "createQueue", topic: topic.topicTitle, tipoCola: topic.tipoCola, idConsumer: this.id });
             socket.on('disconnect', () => {
                 console.log(`disconnected: ${this.id}`);
@@ -17,7 +18,8 @@ class Consumer {
             });
         }
 
-        if (topic.tipoCola == 'cola_de_trabajo') {
+        if (topic.tipoCola === 'cola_de_trabajo') {
+          console.log(`Creando cola de trabajo con nombre: `, topic);
             socket.on('disconnect', () => {
                 console.log(`disconnected: ${this.id}`);
                 topic.deleteConsumer(this);

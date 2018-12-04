@@ -3,10 +3,10 @@ const utils = require('../utils/Utils');
 class Topic {
 
     constructor(topicTitle, tipoCola){
-        this.topicTitle = topicTitle
-        this.tipoCola = tipoCola
-        this.lleno = false
-        this.consumers = []
+        this.topicTitle = topicTitle;
+        this.tipoCola = tipoCola;
+        this.lleno = false;
+        this.consumers = [];
     }
 
     llenate() {
@@ -18,12 +18,12 @@ class Topic {
     }
 
     emitirMensaje(msg, socket) {
-        var consumer = this.consumers.find(c => c.id == msg.idConsumer);
+        const consumer = this.consumers.find(c => c.id === msg.idConsumer);
         consumer.sendMessageToSocket(msg, socket);
     }
 
     getConsumerById(id) {
-        return this.consumers.find(c => id == c.id);
+        return this.consumers.find(c => id === c.id);
     }
 
     addConsumer(consumer){
@@ -36,7 +36,7 @@ class Topic {
 
     updateWorkingConsumer(idConsumer, working){
         this.consumers.forEach(c => {
-            if (c.id == idConsumer) {
+            if (c.id === idConsumer) {
                 c.setWorking(working)
             }
         });
