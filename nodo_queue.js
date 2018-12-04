@@ -59,7 +59,7 @@ function removeConsumer(idConsumer) { //Este mensaje lo reciben las colas de tra
 function handleMessageReplica(msg) {
   switch (msg.tipo) {
     case "delete":
-      deleteQueue(msg.idConsumer);
+      deleteQueue(msg);
       break;
     case 'init':
       statusQueue.original = msg.original;
@@ -78,13 +78,14 @@ function deliverToConsumer(tipoCola) {
     console.log(`TIPO COLA: ${tipoCola}`);
     const consumerQueRecibe = statusQueue.consumidores.shift();
     statusQueue.consumidores.push(consumerQueRecibe);
-    const mensaje = statusQueue.mensajes.find((m) => m.status === STATUS.PENDING);
+    const mensaje = statusQueue.mensajes.shift();
+   /* const mensaje = statusQueue.mensajes.find((m) => m.status === STATUS.PENDING);
     setTimeout(() => {
       var unprocessMessageInd = statusQueue.mensajes.findIndex((m) => m.id === mensaje.id);
       if(unprocessMessageInd != -1 ){
         statusQueue.mensajes[unprocessMessageInd].status = STATUS.PENDING;
       }
-    },10000);
+    },10000);*/
     console.log(`Soy queue ${process.pid}: Resto mensaje: Tengo `, statusQueue.mensajes.length);
     process.send({tipo: 'enviarMensaje', mensaje, idConsumer: consumerQueRecibe})
   }
@@ -95,7 +96,7 @@ function deliverToConsumer(tipoCola) {
 }
 
 function deleteQueue(msg) { //Este mensaje se usa solo para colas pub-sub
-  if (statusQueue.consumidores[0].id === msg.consumidor) { //Siempre va a tener un solo consumidor
+  if (statusQueue.consumidores[0] === msg.consumidor) { //Siempre va a tener un solo consumidor
     console.log("Soy queue " + process.pid + ": Me debo eliminar");
     process.disconnect();
     process.exit()

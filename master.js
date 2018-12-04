@@ -62,7 +62,6 @@ class Manager {
       tipo: "delete",
       consumidor
     };
-
     if (tipoCola === "publicar_suscribir") {
       this.queues.forEach(q => q.topicTitle === topicTitle && q.original.nodo.send(deleteMessage) && q.replica.nodo.send(deleteMessage));
     } else {
@@ -74,7 +73,6 @@ class Manager {
     console.log("enviando mensaje",msg);
     console.log(this.queues);
     this.queues.forEach(q => { q.topicTitle === topicTitle; 
-                              console.log(q.original.nodo); 
                               q.original.nodo.send(msg);
     });
   }
