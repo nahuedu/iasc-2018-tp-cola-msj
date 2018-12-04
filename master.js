@@ -71,7 +71,12 @@ class Manager {
   }
 
   sendMsg(topicTitle, msg) {
-    this.queues.forEach(q => q.topicTitle === topicTitle && q.original.nodo.send(msg));
+    console.log("enviando mensaje",msg);
+    console.log(this.queues);
+    this.queues.forEach(q => { q.topicTitle === topicTitle; 
+                              console.log(q.original.nodo); 
+                              q.original.nodo.send(msg);
+    });
   }
 
   consumerRecibeMensajes(topicTitle, msg) {

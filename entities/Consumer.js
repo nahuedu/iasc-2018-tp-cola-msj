@@ -11,10 +11,10 @@ class Consumer {
 
         if (topic.tipoCola === 'publicar_suscribir') {
             console.log(`Creando cola pub_sub con nombre: `, topic);
-            process.send({ tipo: "createQueue", topic: topic.topicTitle, tipoCola: topic.tipoCola, idConsumer: this.id });
+            process.send({ tipo: "createQueue", topicTitle: topic.topicTitle, tipoCola: topic.tipoCola, idConsumer: this.id });
             socket.on('disconnect', () => {
                 console.log(`disconnected: ${this.id}`);
-                process.send({ tipo: "deleteQueue", topic: topic.topicTitle, tipoCola: topic.tipoCola, idConsumer: this.id });
+                process.send({ tipo: "deleteQueue", topicTitle: topic.topicTitle, tipoCola: topic.tipoCola, idConsumer: this.id });
             });
         }
 
