@@ -27,13 +27,13 @@ class Manager {
         this.deleteQueue(topic, tipoCola, idConsumer);
         break;
       case "sendMsg":
-        this.sendMsg(topic, { tipo, topic, tipoCola, idConsumer, msg });
+        this.enviarComoViene(topic, { tipo, topic, tipoCola, idConsumer, msg });
         break;
       case "consumerRecibeMensajes":
-        this.consumerRecibeMensajes(topic, { tipo, topic, tipoCola, idConsumer, msg });
+        this.enviarComoViene(topic, { tipo, topic, tipoCola, idConsumer, msg });
         break;
       case "removeConsumer":
-        this.removeConsumer(topic, msg);
+        this.enviarComoViene(topic, msg);
         break;
       case "toReplica":
         this.toReplica({ tipo, status });
@@ -58,6 +58,13 @@ class Manager {
       this.queues.forEach(q => q.topic == topic && q.original.nodo.send({ tipo: "delete", consumidor }) && q.replica.nodo.send({ tipo: "delete", consumidor }));
       //this.queues.forEach(q => q.topic == topic && q.nodo.disconnect());
     };
+  }
+
+  enviarComoViene(topic, msg) {
+    for (var i = 0; i < this.queues.length; i++) {
+      if (this.queues[i].topic == topic)
+        this.queues[i].original.nodo.send(msg)
+    }
   }
 
   sendMsg(topic, msg) {

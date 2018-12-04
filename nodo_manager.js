@@ -13,7 +13,7 @@ const sockets = [];
 
 let statusManager = {
   topics: [],
-  idsConsumers: 0,
+  idsConsumers: 1,
   original: false,
   initOriginal: true,
 };
@@ -42,11 +42,14 @@ setInterval(() => {
 
       socket.on('working', msg => {
         const topic = getTopic(msg.topic, statusManager.topics);
-        topic && topic.consumers.forEach(c => {
-          if (c.id == idConsumer) {
-            c.working = msg.working;
-          }
-        });
+        if (topic) {
+           for (var i = 0; i < topic.consumers.length; i++) {
+              const c = topic.consumers[i]
+              if (c.id == idConsumer) {
+                c.working = msg.working;
+              }
+            };
+        }
       });
 
       socket.on('disconnect', () => {
@@ -120,7 +123,7 @@ setInterval(() => {
           }
         })
       })
-    }, 10);
+    }, 1000);
     /* FIN LOOP */
   }
 }, 1000);
@@ -140,16 +143,14 @@ function handleMessageOriginal(msg) {
   } else if (msg.tipo == 'enviarMensaje') {
     const topic = getTopic(msg.topic, statusManager.topics);
     if (typeof msg.idConsumer !== 'number') {
-      console.log(msg, "enviar")
       for (var i = 0; i < topic.consumers.length; i++) {
         const c = topic.consumers[i]
-        
+
         if (!c.working) {
           c.working = true;
           var socket = getSocket(c.id, sockets).socket
           
           if (socket){
-            console.log(msg, "enviar 2")
             socket.emit('mensaje', { mensaje: msg.mensaje });
           }
           else {
@@ -163,13 +164,17 @@ function handleMessageOriginal(msg) {
         }
       }
     } else {
-      topic.consumers.forEach(c => {
+      for (var i = 0; i < topic.consumers.length; i++) {
+        const c = topic.consumers[i]
+        if (c.id == 0) console.log("ENVIAR",c,msg)
         if (!c.working && c.id == msg.idConsumer) {
-          const { socket } = getSocket(c.id, sockets);
-          socket.emit('mensaje', { mensaje: msg.mensaje });
+          if (c.id == 0)  console.log("ENTRE",c)
           c.working = true;
+          const { socket } = getSocket(c.id, sockets);
+          if (c.id == 0)  console.log("Voy a enviar",msg.mensaje)
+          socket.emit('mensaje', { mensaje: msg.mensaje });
         }
-      })
+      }
     }
   }
 }

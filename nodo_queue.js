@@ -1,7 +1,7 @@
 var MAXIMO = 1000
 var statusQueue = {
 	mensajes: [],
-	consumidor: null,
+	consumidor: false,
 	original: false,
 }
 
@@ -76,7 +76,7 @@ setInterval(() => {
 	if (statusQueue.original) {
 		process.send({ tipo: "toReplica", status: statusQueue });
 	}
-}, 10);
+}, 100);
 
 /*
 setInterval(() => {
