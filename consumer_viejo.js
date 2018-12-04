@@ -24,7 +24,7 @@ function socketClient() {
 
 	socket.on('mensaje', msg => {
 	  console.log(msg.mensaje);
-	  sleep.sleep(5);
+	  sleep.sleep(1);
 	  socket.emit('working', { topic, working: false });
 	});
 }

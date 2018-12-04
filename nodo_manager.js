@@ -140,17 +140,28 @@ function handleMessageOriginal(msg) {
   } else if (msg.tipo == 'enviarMensaje') {
     const topic = getTopic(msg.topic, statusManager.topics);
     if (typeof msg.idConsumer !== 'number') {
-      topic.consumers.forEach((c) => {
+      console.log(msg, "enviar")
+      for (var i = 0; i < topic.consumers.length; i++) {
+        const c = topic.consumers[i]
+        
         if (!c.working) {
-          var socket = getSocket(c.id, sockets).socket
-          socket.emit('mensaje', { mensaje: msg.mensaje });
           c.working = true;
-
-          setTimeout(() => {
+          var socket = getSocket(c.id, sockets).socket
+          
+          if (socket){
+            console.log(msg, "enviar 2")
+            socket.emit('mensaje', { mensaje: msg.mensaje });
+          }
+          else {
+            console.log("No encuentro socket para enviar mensaje", msg)
+          }
+          break;
+       /*   setTimeout(() => {
             //si a los 10 segundos no confirmo accion, reencolar
           }, 10000);
+          */
         }
-      })
+      }
     } else {
       topic.consumers.forEach(c => {
         if (!c.working && c.id == msg.idConsumer) {
