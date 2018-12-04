@@ -7,13 +7,12 @@ var statusQueue = {
 }
 
 process.on('message', msg => {
-	if (statusQueue.original == true) {
-		handleMessageOriginal(msg)
+	if (statusQueue.original) {
+		handleMessageOriginal(msg);
 	} else {
-		handleMessageReplica(msg)
+		handleMessageReplica(msg);
 	}
 });
-
 
 function handleMessageOriginal(msg) {
 	switch (msg.tipo) {
@@ -25,9 +24,9 @@ function handleMessageOriginal(msg) {
 			break;
 		case 'sendMsg':
 			statusQueue.mensajes.push(msg.msg);
-			console.log("Soy queue "+process.pid+": Sumo mensaje: Tengo ",statusQueue.mensajes.length)
+			console.log(`Soy queue ${process.pid}: Sumo mensaje: Tengo ${statusQueue.mensajes.length}`)
 			if (statusQueue.mensajes.length >= MAXIMO) {
-				process.send({ tipo: 'FULL' })
+				process.send({ tipo: 'FULL' });
 			}
 			break;
 		case "removeConsumer":
@@ -35,11 +34,11 @@ function handleMessageOriginal(msg) {
 			break;
 		case "addConsumer":
 			console.log(`agregado consumer con id ${msg.idConsumer}`);
-			
+
 			statusQueue.consumidores.push(msg.idConsumer);
 			break;
 		default:
-			console.log(msg)
+			console.log(msg);
 	}
 }
 
@@ -54,12 +53,15 @@ function handleMessageReplica(msg) {
 			break;
 		case 'init':
 			statusQueue.original = msg.original;
-			process.send({tipo: "soyOriginal" })  
-			console.log("Soy queue "+process.pid+": Mi consumidor es " + statusQueue.consumidores + ' y original es '+statusQueue.original);
+			process.send({ tipo: "soyOriginal" });
+			console.log(`Soy queue ${process.pid}: Mi consumidor es ${statusQueue.consumidor} y original es ${statusQueue.original}`);
 			break;
 		case 'toReplica':
-			statusQueue = msg.status
+			statusQueue = msg.status;
 			statusQueue.original = false;
+			break;
+		default:
+			console.log(msg);
 			break;
 	}
 }
@@ -69,17 +71,17 @@ function deliverToConsumer() {
 		var consumerQueRecibe = statusQueue.consumidores.shift();
 		statusQueue.consumidores.push(consumerQueRecibe);
 		var mensaje = statusQueue.mensajes.shift();
-		console.log("Soy queue "+process.pid+": Resto mensaje: Tengo ",statusQueue.mensajes.length)
+		console.log("Soy queue " + process.pid + ": Resto mensaje: Tengo ", statusQueue.mensajes.length)
 		process.send({ tipo: 'enviarMensaje', mensaje: mensaje, idConsumer: consumerQueRecibe })
 	}
-	if (statusQueue.mensajes.length  < MAXIMO) {
+	if (statusQueue.mensajes.length < MAXIMO) {
 		process.send({ tipo: 'AVAILABLE' })
 	}
 }
 
-function deleteQueue(msg){ //Este mensaje se usa solo para colas pub-sub
+function deleteQueue(msg) { //Este mensaje se usa solo para colas pub-sub
 	if (statusQueue.consumidores[0].id == msg.consumidor) { //Siempre va a tener un solo consumidor
-		console.log("Soy queue "+process.pid+": Me debo eliminar");
+		console.log("Soy queue " + process.pid + ": Me debo eliminar");
 		process.disconnect()
 		process.exit()
 	}
@@ -88,9 +90,9 @@ function deleteQueue(msg){ //Este mensaje se usa solo para colas pub-sub
 
 
 setInterval(() => {
-	if (statusQueue.original){
-			process.send({tipo: "toReplica", status: statusQueue })  
-		}
+	if (statusQueue.original) {
+		process.send({ tipo: "toReplica", status: statusQueue });
+	}
 }, 10);
 
 /*

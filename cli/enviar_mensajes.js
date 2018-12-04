@@ -1,46 +1,42 @@
-const readline = require('readline');
+const minimist = require('minimist');
 const http = require('http');
 const conn = require('../utils/Connections');
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
+const port = conn.producerPort;
+const hostname = conn.host;
+
+const argv = minimist(process.argv);
+const { topic, msg } = argv;
+
+if (!topic || !msg) {
+    console.log('Usage: node enviar_mensajes.js --topic TOPIC --msg MSG');
+    process.exit();
+}
+
+console.log(topic, msg);
+
+console.log(`Se enviara un mensaje haciendo POST a ${hostname}:${port}/send`);
+
+const postData = {
+    topic,
+    msg
+};
+
+const options = {
+    hostname,
+    port,
+    path: '/send',
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'cache-control': 'no-cache'
+    }
+};
+
+const req = http.request(options, res => {
+    res.setEncoding('utf8');
+    res.on('data', console.log);
 });
 
-var puerto = conn.producerPort;
-var host = conn.host;
-
-console.log(`Se enviara un mensaje haciendo POST a ${host}:${puerto}/send`);
-
-rl.question('Ingrese topic: ', (topicTitle) => {
-
-    rl.question('Ingrese el mensaje: ', (mensaje) => {
-       
-        const postData = {
-            topicTitle: topicTitle,
-            msg: mensaje
-        };
-
-        const options = {
-            hostname: host,
-            port: puerto,
-            path: '/send',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'cache-control': 'no-cache'
-            }
-        };
-        
-        const req = http.request(options, (res) => {
-            res.setEncoding('utf8');
-            res.on('data', (data) => {
-                console.log(data);
-            });
-        });
-
-        req.write(JSON.stringify(postData));
-        req.end();
-        rl.close();
-    });
-});
+req.write(JSON.stringify(postData));
+req.end();

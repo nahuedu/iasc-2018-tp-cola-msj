@@ -1,18 +1,17 @@
-const readline = require('readline');
-const ConsumerClientSocket = require('./consumerClientSocket');
+const Consumer = require('./consumerClientSocket');
+const minimist = require('minimist');
 const conn = require('../utils/Connections');
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+const managerUrl = `http://${conn.host}:${conn.consumerPort}`;
 
-var managerUrl = `http://${conn.host}:${conn.consumerPort}`;
+const argv = minimist(process.argv);
+const { topic } = argv;
+
+if (!topic) {
+  console.log('Usage: node add_consumer.js --topic TOPIC');
+  process.exit();
+}
 
 console.log(`Se conectara un nuevo consumer a ${managerUrl}`);
 
-rl.question('Ingrese topic: ', (topicTitle) => {
-
-    new ConsumerClientSocket(topicTitle, managerUrl).socketClient();
-    
-});
+new Consumer(argv['topic'], managerUrl).socketClient();

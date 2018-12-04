@@ -9,23 +9,23 @@ const Topic = require('./entities/Topic');
 const Consumer = require('./entities/Consumer');
 io.origins('*:*');
 
-var statusManager = {
+const sockets = [];
+
+let statusManager = {
   topics: [],
-  idsConsumers: 0, 
+  idsConsumers: 0,
   original: false,
   initOriginal: true,
 };
 const socketsConsumers = [];
 
 process.on('message', msg => {
-  if (statusManager.original == true) {
-    handleMessageOriginal(msg)
+  if (statusManager.original) {
+    handleMessageOriginal(msg);
   } else {
-    handleMessageReplica(msg)
+    handleMessageReplica(msg);
   }
-
 });
-
 
 setInterval(() => {
   if (statusManager.original && statusManager.initOriginal) {
@@ -38,14 +38,28 @@ setInterval(() => {
       socket.on('conectar_topic', msg => {
         var idConsumer = newConsumer(msg.topicTitle, msg.idConsumer, socket, statusManager);
         socketsConsumers.push({ idConsumer, socket });
-        process.send({tipo:'addConsumer', idConsumer: idConsumer, topicTitle:msg.topicTitle});
+        process.send({ tipo: 'addConsumer', idConsumer: idConsumer, topicTitle: msg.topicTitle });
       });
+
+      socket.on('working', msg => {
+        const topic = utils.getTopic(msg.topic, statusManager.topics);
+        topic && topic.consumers.forEach(c => {
+          if (c.id == idConsumer) {
+            c.working = msg.working;
+          }
+        });
+      });
+
+      socket.on('disconnect', () => {
+        console.log(`disconnected: ${idConsumer}`);
+        process.send({ tipo: 'removeConsumer', consumer: idConsumer });
+      })
     });
 
     app.use(bodyParser.json()); // for parsing application/json
 
     http.listen({ host: conn.host, port: conn.consumerPort }, () => {
-      console.log(`recibiendo conexiones de consumidores en ${conn.host}:${conn.consumerPort}`);
+      console.log(`Recibiendo conexiones de consumidores en ${conn.host}:${conn.consumerPort}`);
     });
     /* FIN SOCKET */
 
@@ -55,9 +69,9 @@ setInterval(() => {
     });
 
     app.post('/send', (req, res) => {
-      const { msg, topicTitle } = req.body;
+      const { msg, topic: topicTitle } = req.body;
       const existentTopic = utils.getTopic(topicTitle, statusManager.topics);
-      
+
       if (existentTopic) {
         if (existentTopic.lleno) {
           res.status(400).json({ success: false, msg: 'La cola con topico ' + topicTitle + ' esta llena' });
@@ -66,12 +80,12 @@ setInterval(() => {
           res.json({ success: true, msg: 'Mensaje recibido' });
         }
       } else {
-        res.status(404).json({ success: false, msg: 'Topic no encontrado' });
+        res.status(404).json({ success: false, topic: topicTitle, msg: 'Topic no encontrado' });
       }
     });
 
     app.post('/queue', (req, res) => {
-      const { topicTitle, tipoCola } = req.body;
+      const { topic: topicTitle, tipoCola } = req.body;
 
       if (!utils.getTopic(topicTitle, statusManager.topics)) {
         if (tipoCola == 'cola_de_trabajo') {
@@ -88,7 +102,7 @@ setInterval(() => {
     });
 
     app.get('/status', (req, res) => {
-      res.send(statusManager)
+      res.send(statusManager);
     })
 
     /* FIN HTTP REST PARA PRODUCTORES */
@@ -104,9 +118,9 @@ setInterval(() => {
 
 
 function handleMessageOriginal(msg) {
-  if(msg.tipo == "init") {
-      console.log(msg)
-      statusManager.original = msg.original
+  if (msg.tipo == "init") {
+    console.log(msg);
+    statusManager.original = msg.original;
   }
   else if (msg.msg == 'FULL') {
     let topic = utils.getTopic(msg.topicTitle, statusManager.topics);
@@ -124,21 +138,18 @@ function handleMessageOriginal(msg) {
 }
 
 function handleMessageReplica(msg) {
-  switch(msg.tipo) {
+  switch (msg.tipo) {
     case "init":
-      console.log("Creo manager "+process.pid);
-      statusManager.original = msg.original
+      console.log(`Creo manager ${process.pid}`);
+      statusManager.original = msg.original;
       break;
     case 'toReplica':
-      statusManager = msg.status
+      statusManager = msg.status;
       statusManager.original = false;
-      statusManager.initOriginal = true
+      statusManager.initOriginal = true;
       break;
   }
-  
 }
-
-
 
 setInterval(() => {
   if (statusManager.original) {
@@ -150,11 +161,11 @@ setInterval(() => {
 
 
 function newConsumer(topicTitle, idConsumer, socket, statusManager) {
-
+  let consumer = {};
   const topic = utils.getTopic(topicTitle, statusManager.topics);
 
   if (topic) {
-    var consumer = topic.getConsumerById(idConsumer);
+    consumer = topic.getConsumerById(idConsumer);
     var newConsumer = false;
 
     if (!consumer) {
@@ -168,7 +179,7 @@ function newConsumer(topicTitle, idConsumer, socket, statusManager) {
       console.log(`Voy a insertar consumer con id ${consumer.id}`);
       topic.addConsumer(consumer);
     }
-    socket.emit('status_topic', { success: true , idConsumer: consumer.id});
+    socket.emit('status_topic', { success: true, idConsumer: consumer.id });
   } else {
     socket.emit('status_topic', { success: false, message: "No existe el topic " + topicTitle });
   }

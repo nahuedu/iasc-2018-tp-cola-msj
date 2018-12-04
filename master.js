@@ -1,19 +1,19 @@
 const { fork } = require('child_process');
-var countQueue = 0;
 
 class Manager {
   constructor(original) {
-    this.original = original
+    this.original = original;
     this.queues = [];
+    this.queueCounter = 0;
     this.nodo = fork("nodo_manager.js");
     this.handleMessage = this.handleMessage.bind(this);
     this.nodo.on('message', this.handleMessage);
-    this.nodo.send({tipo: "init", original: original})
-    this.nodo.on('close', (code) => {
-      console.log("close with code",code); 
+    this.nodo.send({ tipo: "init", original: original })
+    this.nodo.on('close', code => {
+      console.log("close with code", code);
       if (code == null) {
-        console.log("Manager was killed. Original: "+ this.original)
-        managerKilled(this.original)
+        console.log(`Manager was killed. Original: ${this.original}`);
+        managerKilled(this.original);
       }
     });
   }
@@ -39,16 +39,15 @@ class Manager {
         this.toReplica({ tipo, status });
         break;
       case "addConsumer":
-        this.queues.forEach(q => q.topicTitle == topicTitle && q.original.nodo.send({tipo, idConsumer, topicTitle}));
+        this.queues.forEach(q => q.topicTitle == topicTitle && q.original.nodo.send({ tipo, idConsumer, topicTitle }));
         break;
     }
   };
 
-  createQueue(topicTitle, tipo) {
-    const idQueue = ++countQueue;
-
-    const queue = new Queue(this, topicTitle, idQueue, true);
-    queue.nodo.send({ tipo: "init", original: true });
+  createQueue(topicTitle, tipo, consumidor) {
+    const idQueue = ++this.queueCounter;
+    const queue = new Queue(this, topicTitle, idQueue, true, consumidor);
+    queue.nodo.send({ tipo: "init", consumidor, original: true });
 
     const queueReplica = new Queue(this, topicTitle, idQueue, false);
     queueReplica.nodo.send({ tipo: "init", original: false });
@@ -59,7 +58,7 @@ class Manager {
 
   deleteQueue(topicTitle, tipoCola, consumidor) {
     if (tipoCola == "publicar_suscribir") {
-      this.queues.forEach(q => q.topicTitle == topicTitle && q.original.nodo.send({ tipo: "delete", consumidor }) && q.replica.nodo.send({ tipo: "delete", consumidor })  );
+      this.queues.forEach(q => q.topicTitle == topicTitle && q.original.nodo.send({ tipo: "delete", consumidor }) && q.replica.nodo.send({ tipo: "delete", consumidor }));
       //this.queues.forEach(q => q.topic == topic && q.nodo.disconnect());
     };
   }
@@ -73,7 +72,7 @@ class Manager {
   }
 
   removeConsumer(tipo, idConsumer, topicTitle) {
-    this.queues.forEach(q => q.topicTitle == topicTitle && q.original.nodo.send({tipo, idConsumer}));
+    this.queues.forEach(q => q.topicTitle == topicTitle && q.original.nodo.send({ tipo, idConsumer }));
   }
 
   toReplica(msg) {
@@ -84,22 +83,22 @@ class Manager {
     const element = this.queues.find(q => q.idQueue == idQueue)
     return element.replica
   }
-  
-  queueKilled(idQueue, original)  {
-    var element = this.queues.find(q => q.idQueue == idQueue)
 
-    const queueReplica = new Queue(this, element.topicTitle, idQueue, false);
-    const replica = queueReplica
-    replica.nodo.send({ tipo: "init", original: false });
+  queueKilled(idQueue, original, consumidor) {
+    const element = this.queues.find(q => q.idQueue == idQueue);
+
+    const queueReplica = new Queue(this, element.topic, idQueue, false, consumidor);
+    const replica = queueReplica;
+    replica.nodo.send({ tipo: "init", consumidor, original: false });
 
     if (original) {
-      console.log("Cayo original, fue reemplazado")
-      element.original = element.replica
-      element.original.nodo.send({ tipo: "init", original: true });
+      console.log("Cayo original, fue reemplazado");
+      element.original = element.replica;
+      element.original.nodo.send({ tipo: "init", consumidor, original: true });
     }
 
-    console.log("Replica reemplazada")
-    element.replica = replica
+    console.log("Replica reemplazada");
+    element.replica = replica;
   }
 }
 
@@ -113,13 +112,13 @@ class Queue {
     this.handleMessage = this.handleMessage.bind(this);
     this.nodo.on('message', this.handleMessage);
     this.nodo.on('close', (code) => {
-      console.log("close with code",code); 
+      console.log("close with code", code);
       if (code == null) {
-        console.log("Queue "+this.idQueue+" was killed. Original: "+ this.original)
-        this.manager.queueKilled(this.idQueue, this.original)
+        console.log("Queue " + this.idQueue + " was killed. Original: " + this.original)
+        this.manager.queueKilled(this.idQueue, this.original, consumidor)
       }
     });
-    this.nodo.on('error', (err) => {});
+    this.nodo.on('error', () => { });
   }
 
   handleMessage({ tipo, topicTitle, mensaje, idConsumer, status }) {
@@ -134,7 +133,7 @@ class Queue {
       case "toReplica":
         const replica = this.manager.nodoReplica(this.idQueue)
         if (replica)
-          replica.nodo.send({tipo, status})
+          replica.nodo.send({ tipo, status })
         break;
       case "soyOriginal":
         this.original = true;
@@ -146,25 +145,24 @@ class Queue {
   }
 }
 
-var managerOriginal = new Manager(true);
-var managerReplica = new Manager(false);
+let managerOriginal = new Manager(true);
+let managerReplica = new Manager(false);
 
 function managerKilled(original) {
   if (original) {
-
-     managerReplica.queues = managerOriginal.queues
-     managerReplica.queues.forEach( (q) => {
+    managerReplica.queues = managerOriginal.queues
+    managerReplica.queues.forEach((q) => {
       q.original.manager = managerReplica
       q.replica.manager = managerReplica
-     })
+    });
 
-     managerOriginal = managerReplica
-     managerOriginal.original = true
-     managerOriginal.nodo.send({tipo: "init", original: true})
+    managerOriginal = managerReplica;
+    managerOriginal.original = true;
+    managerOriginal.nodo.send({ tipo: "init", original: true });
   }
 
- managerReplica = new Manager(false)
+  managerReplica = new Manager(false);
 
- console.log("Original",managerOriginal.nodo.pid)
- console.log("Replica",managerReplica.nodo.pid)
+  console.log(`Original ${managerOriginal.nodo.pid}`);
+  console.log(`Replica ${managerReplica.nodo.pid}`);
 }

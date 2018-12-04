@@ -1,46 +1,41 @@
-const readline = require('readline');
 const http = require('http');
+const minimist = require('minimist');
 const conn = require('../utils/Connections');
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
+const port = conn.producerPort;
+const hostname = conn.host;
+
+const argv = minimist(process.argv);
+const { topic, tipoCola } = argv;
+
+
+if (!topic || !['cola_de_trabajo', 'publicar_suscribir'].includes(tipoCola)) {
+    console.log('Usage: node crear_cola.js --topic TOPIC --tipoCola [cola_de_trabajo|publicar_suscribir]');
+    process.exit();
+}
+
+console.log(`Se creara una cola haciendo POST a ${hostname}:${port}/queue`);
+
+const postData = {
+    topic,
+    tipoCola
+};
+
+const options = {
+    hostname,
+    port,
+    path: '/queue',
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'cache-control': 'no-cache'
+    }
+};
+
+const req = http.request(options, res => {
+    res.setEncoding('utf8');
+    res.on('data', console.log);
 });
 
-var puerto = conn.producerPort;
-var host = conn.host;
-
-console.log(`Se creara una cola haciendo POST a ${host}:${puerto}/queue`);
-
-rl.question('Ingrese topic: ', (topicTitle) => {
-
-    rl.question('Ingrese tipo de cola, debe ser cola_de_trabajo o publicar_suscribir: ', (tipoCola) => {
-       
-        const postData = {
-            topicTitle: topicTitle,
-            tipoCola: tipoCola
-        };
-
-        const options = {
-            hostname: host,
-            port: puerto,
-            path: '/queue',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'cache-control': 'no-cache'
-            }
-        };
-        
-        const req = http.request(options, (res) => {
-            res.setEncoding('utf8');
-            res.on('data', (data) => {
-                console.log(data);
-            });
-        });
-
-        req.write(JSON.stringify(postData));
-        req.end();
-        rl.close();
-    });
-});
+req.write(JSON.stringify(postData));
+req.end();
