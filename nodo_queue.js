@@ -1,4 +1,5 @@
 let MAXIMO = 1000;
+const uuidv1 = require('uuid/v1');
 let statusQueue = {
   mensajes: [],
   consumidores: [],
@@ -29,6 +30,7 @@ function handleMessageOriginal(msg) {
       break;
     case 'sendMsg':
       statusQueue.mensajes.push({
+        id: uuidv1(), 
         message: msg.msg,
         status: STATUS.PENDING
       });
@@ -76,7 +78,13 @@ function deliverToConsumer(tipoCola) {
     console.log(`TIPO COLA: ${tipoCola}`);
     const consumerQueRecibe = statusQueue.consumidores.shift();
     statusQueue.consumidores.push(consumerQueRecibe);
-    const mensaje = statusQueue.mensajes.shift();
+    const mensaje = statusQueue.mensajes.find((m) => m.status === STATUS.PENDING);
+    setTimeout(() => {
+      var unprocessMessageInd = statusQueue.mensajes.findIndex((m) => m.id === mensaje.id);
+      if(unprocessMessageInd != -1 ){
+        statusQueue.mensajes[unprocessMessageInd].status = STATUS.PENDING;
+      }
+    },10000);
     console.log(`Soy queue ${process.pid}: Resto mensaje: Tengo `, statusQueue.mensajes.length);
     process.send({tipo: 'enviarMensaje', mensaje, idConsumer: consumerQueRecibe})
   }
