@@ -35,20 +35,17 @@ setInterval(() => {
       console.log(`connected: ${socket.id}`);
       socket.on('conectar_topic', msg => {
         idConsumer = newConsumer(msg, socket, statusManager);
-        
         sockets.push({ idConsumer, socket });
       });
 
       socket.on('working', msg => {
+
         const topic = statusManager.topics.get(msg.topic);
         if (topic) {
-           for (var i = 0; i < topic.consumers.length; i++) {
-              const c = topic.consumers[i];
-              if (c.id === idConsumer) {
-                c.working = msg.working;
-              }
-           }
+          const c = topic.consumers.get(idConsumer)
+          c.working = msg.working;
         }
+
       });
 
       socket.on('disconnect', () => {
