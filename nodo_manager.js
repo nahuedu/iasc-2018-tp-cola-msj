@@ -35,19 +35,19 @@ setInterval(() => {
       console.log(`connected: ${socket.id}`);
       socket.on('conectar_topic', msg => {
         idConsumer = newConsumer(msg, socket, statusManager);
-        
+
         sockets.push({ idConsumer, socket });
       });
 
       socket.on('working', msg => {
         const topic = statusManager.topics.get(msg.topic);
         if (topic) {
-           for (var i = 0; i < topic.consumers.length; i++) {
-              const c = topic.consumers[i];
-              if (c.id === idConsumer) {
-                c.working = msg.working;
-              }
-           }
+          for (var i = 0; i < topic.consumers.length; i++) {
+            const c = topic.consumers[i];
+            if (c.id === idConsumer) {
+              c.working = msg.working;
+            }
+          }
         }
       });
 
@@ -108,7 +108,24 @@ setInterval(() => {
     });
 
     app.get('/status', (req, res) => {
-      res.send(statusManager);
+      const {
+        topics,
+        idsConsumers,
+        original,
+        initOriginal,
+      } = statusManager;
+      res.send({
+        topics: Array.from(topics, ([key, { topic, tipoCola, lleno, consumers }]) =>
+          ({
+            topic,
+            tipoCola,
+            lleno,
+            consumers: Array.from(consumers, ([id, value]) => value)
+          })),
+        idsConsumers,
+        original,
+        initOriginal
+      });
     });
 
     /* FIN HTTP REST PARA PRODUCTORES */
@@ -149,18 +166,18 @@ function handleMessageOriginal(msg) {
         if (!c.working) {
           c.working = true;
           let socket = getSocket(c.id, sockets).socket;
-          
-          if (socket){
+
+          if (socket) {
             socket.emit('mensaje', { mensaje: msg.mensaje });
           }
           else {
             console.log("No encuentro socket para enviar mensaje", msg)
           }
           break;
-       /*   setTimeout(() => {
-            //si a los 10 segundos no confirmo accion, reencolar
-          }, 10000);
-          */
+          /*   setTimeout(() => {
+               //si a los 10 segundos no confirmo accion, reencolar
+             }, 10000);
+             */
         }
       }
     } else {
@@ -171,10 +188,10 @@ function handleMessageOriginal(msg) {
       } else {
         const consumer = topic.consumers.get(msg.idConsumer);
         if (consumer && !consumer.working) {
-          if (consumer.id === 0)  console.log("ENTRE", consumer);
+          if (consumer.id === 0) console.log("ENTRE", consumer);
           consumer.working = true;
           const { socket } = getSocket(consumer.id, sockets);
-          if (consumer.id === 0)  console.log("Voy a enviar", msg.mensaje);
+          if (consumer.id === 0) console.log("Voy a enviar", msg.mensaje);
           socket.emit('mensaje', { mensaje: msg.mensaje });
         }
       }
