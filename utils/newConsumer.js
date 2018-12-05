@@ -1,10 +1,9 @@
-const getTopic = require('./getTopic');
 const getConsumerById = require('./getConsumerById');
 
 module.exports = (msg, socket, statusManager) => {
-  const topic = getTopic(msg.topic, statusManager.topics);
-  var consumer = {}
-  var newConsumer = false;
+  const topic = statusManager.topics.get(msg.topic);
+  let consumer = {};
+  let newConsumer = false;
 
   if (topic) {
     consumer = getConsumerById(msg.idConsumer, topic.consumers);
@@ -18,7 +17,7 @@ module.exports = (msg, socket, statusManager) => {
 
     consumer.working = false;
 
-    if (topic.tipoCola == 'publicar_suscribir') {
+    if (topic.tipoCola === 'publicar_suscribir') {
       process.send({ tipo: "createQueue", topic: topic.topic, tipoCola: topic.tipoCola, idConsumer: consumer.id });
       socket.on('disconnect', () => {
         process.send({ tipo: "deleteQueue", topic: topic.topic, tipoCola: topic.tipoCola, idConsumer: consumer.id });
@@ -28,7 +27,7 @@ module.exports = (msg, socket, statusManager) => {
 
     if (newConsumer) {
       console.log(`Voy a insertar consumer ${newConsumer}`);
-      topic.consumers.push(consumer);
+      topic.consumers.set(consumer.id, consumer);
     } 
 
     socket.emit('status_topic', { success: true, idConsumer: consumer.id });

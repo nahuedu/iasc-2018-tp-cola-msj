@@ -1,9 +1,9 @@
-var MAXIMO = 1000
+var MAXIMO = 1000;
 var statusQueue = {
 	mensajes: [],
 	consumidor: false,
 	original: false,
-}
+};
 
 process.on('message', msg => {
 	if (statusQueue.original) {
@@ -16,17 +16,17 @@ process.on('message', msg => {
 function handleMessageOriginal(msg) {
 	switch (msg.tipo) {
 		case "delete":
-			if (statusQueue.consumidor == msg.consumidor) {
+			if (statusQueue.consumidor === msg.consumidor) {
 				console.log(`Soy queue ${process.pid}: Me debo eliminar`);
 				process.disconnect();
 				process.exit();
 			}
 			break;
 		case 'consumerRecibeMensajes':
-			if (statusQueue.consumidor == msg.idConsumer || !statusQueue.consumidor) {
+			if (statusQueue.consumidor === msg.idConsumer || !statusQueue.consumidor) {
 				if (statusQueue.mensajes.length > 0) {
-					var mensaje = statusQueue.mensajes.shift();
-					console.log(`Soy queue ${process.pid}: Resto mensaje: Tengo ${statusQueue.mensajes.length}`);
+          const mensaje = statusQueue.mensajes.shift();
+          console.log(`Soy queue ${process.pid}: Resto mensaje: Tengo ${statusQueue.mensajes.length}`);
 					process.send({ tipo: 'enviarMensaje', mensaje, idConsumer: statusQueue.consumidor });
 				}
 				if (statusQueue.mensajes.length < MAXIMO) {
@@ -36,7 +36,7 @@ function handleMessageOriginal(msg) {
 			break;
 		case 'sendMsg':
 			statusQueue.mensajes.push(msg.msg);
-			console.log(`Soy queue ${process.pid}: Sumo mensaje: Tengo ${statusQueue.mensajes.length}`)
+			console.log(`Soy queue ${process.pid}: Sumo mensaje: Tengo ${statusQueue.mensajes.length}`);
 			if (statusQueue.mensajes.length >= MAXIMO) {
 				process.send({ tipo: 'FULL' });
 			}
@@ -49,7 +49,7 @@ function handleMessageOriginal(msg) {
 function handleMessageReplica(msg) {
 	switch (msg.tipo) {
 		case "delete":
-			if (statusQueue.consumidor == msg.consumidor) {
+			if (statusQueue.consumidor === msg.consumidor) {
 				console.log(`Soy queue ${process.pid}: Me debo eliminar`);
 				process.disconnect();
 				process.exit();

@@ -8,7 +8,7 @@ class Manager {
     this.nodo = fork("nodo_manager.js");
     this.handleMessage = this.handleMessage.bind(this);
     this.nodo.on('message', this.handleMessage);
-    this.nodo.send({ tipo: "init", original: original })
+    this.nodo.send({ tipo: "init", original: original });
     this.nodo.on('close', code => {
       console.log("close with code", code);
       if (code == null) {
@@ -54,29 +54,29 @@ class Manager {
   }
 
   deleteQueue(topic, tipoCola, consumidor) {
-    if (tipoCola == "publicar_suscribir") {
-      this.queues.forEach(q => q.topic == topic && q.original.nodo.send({ tipo: "delete", consumidor }) && q.replica.nodo.send({ tipo: "delete", consumidor }));
+    if (tipoCola === "publicar_suscribir") {
+      this.queues.forEach(q => q.topic === topic && q.original.nodo.send({ tipo: "delete", consumidor }) && q.replica.nodo.send({ tipo: "delete", consumidor }));
       //this.queues.forEach(q => q.topic == topic && q.nodo.disconnect());
-    };
+    }
   }
 
   enviarComoViene(topic, msg) {
     for (var i = 0; i < this.queues.length; i++) {
-      if (this.queues[i].topic == topic)
+      if (this.queues[i].topic === topic)
         this.queues[i].original.nodo.send(msg)
     }
   }
 
   sendMsg(topic, msg) {
-    this.queues.forEach(q => q.topic == topic && q.original.nodo.send(msg));
+    this.queues.forEach(q => q.topic === topic && q.original.nodo.send(msg));
   }
 
   consumerRecibeMensajes(topic, msg) {
-    this.queues.forEach(q => q.topic == topic && q.original.nodo.send(msg));
+    this.queues.forEach(q => q.topic === topic && q.original.nodo.send(msg));
   }
 
   removeConsumer(topic, msg) {
-    this.queues.forEach(q => q.topic == topic && q.original.nodo.send(msg));
+    this.queues.forEach(q => q.topic === topic && q.original.nodo.send(msg));
   }
 
   toReplica(msg) {
@@ -84,18 +84,17 @@ class Manager {
   }
 
   nodoReplica(idQueue) {
-    const element = this.queues.find(q => q.idQueue == idQueue)
+    const element = this.queues.find(q => q.idQueue === idQueue);
     return element.replica
   }
 
   queueKilled(idQueue, original, consumidor) {
-    const element = this.queues.find(q => q.idQueue == idQueue);
+    const element = this.queues.find(q => q.idQueue === idQueue);
 
-    const queueReplica = new Queue(this, element.topic, idQueue, false, consumidor);
-    const replica = queueReplica;
+    const replica = new Queue(this, element.topic, idQueue, false, consumidor);
     replica.nodo.send({ tipo: "init", consumidor, original: false });
 
-    console.log(original)
+    console.log(original);
     if (original) {
       element.original = element.replica;
       element.original.nodo.send({ tipo: "init", consumidor, original: true });
@@ -118,7 +117,7 @@ class Queue {
     this.nodo.on('close', (code) => {
       console.log("close with code", code);
       if (code == null) {
-        console.log("Queue " + this.idQueue + " was killed. Original: " + this.original)
+        console.log("Queue " + this.idQueue + " was killed. Original: " + this.original);
         this.manager.queueKilled(this.idQueue, this.original, consumidor)
       }
     });
@@ -135,15 +134,15 @@ class Queue {
         this.manager.nodo.send({ topic: this.topic, tipo, mensaje, idConsumer });
         break;
       case "toReplica":
-        const replica = this.manager.nodoReplica(this.idQueue)
+        const replica = this.manager.nodoReplica(this.idQueue);
         if (replica)
-          replica.nodo.send({ tipo, status })
+          replica.nodo.send({ tipo, status });
         break;
       case "soyOriginal":
         this.original = true;
         break;
       default:
-        console.log({ tipo, topic, mensaje, idConsumer }, "mensaje error handle manager")
+        console.log({ tipo, topic, mensaje, idConsumer }, "mensaje error handle manager");
         throw new Error("Invalid message type.");
     }
   }
@@ -154,9 +153,9 @@ let managerReplica = new Manager(false);
 
 function managerKilled(original) {
   if (original) {
-    managerReplica.queues = managerOriginal.queues
+    managerReplica.queues = managerOriginal.queues;
     managerReplica.queues.forEach((q) => {
-      q.original.manager = managerReplica
+      q.original.manager = managerReplica;
       q.replica.manager = managerReplica
     });
 

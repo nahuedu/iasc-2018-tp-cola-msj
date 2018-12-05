@@ -4,7 +4,6 @@ const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
 const newConsumer = require('./utils/newConsumer');
-const getTopic = require('./utils/getTopic');
 const getSocket = require('./utils/getSocket');
 const conn = require('./utils/Connections');
 io.origins('*:*');
@@ -12,7 +11,7 @@ io.origins('*:*');
 const sockets = [];
 
 let statusManager = {
-  topics: [],
+  topics: new Map(),
   idsConsumers: 1,
   original: false,
   initOriginal: true,
@@ -41,14 +40,14 @@ setInterval(() => {
       });
 
       socket.on('working', msg => {
-        const topic = getTopic(msg.topic, statusManager.topics);
+        const topic = statusManager.topics.get(msg.topic);
         if (topic) {
            for (var i = 0; i < topic.consumers.length; i++) {
-              const c = topic.consumers[i]
-              if (c.id == idConsumer) {
+              const c = topic.consumers[i];
+              if (c.id === idConsumer) {
                 c.working = msg.working;
               }
-            };
+           }
         }
       });
 
@@ -72,7 +71,7 @@ setInterval(() => {
 
     app.post('/send', (req, res) => {
       const { msg, topic } = req.body,
-        existentTopic = getTopic(topic, statusManager.topics);
+        existentTopic = statusManager.topics.get(topic);
       //          console.log(`req: ${req.body}\nrecibí: ${msg} al topico: ${topic}\nexistent topic: ${existentTopic}`);
       if (existentTopic) {
         if (existentTopic.lleno) {
@@ -89,16 +88,16 @@ setInterval(() => {
     app.post('/queue', (req, res) => {
       const { topic, tipoCola } = req.body;
 
-      if (!getTopic(topic, statusManager.topics)) {
-        if (tipoCola == 'cola_de_trabajo') {
+      if (!statusManager.topics.get(topic)) {
+        if (tipoCola === 'cola_de_trabajo') {
           process.send({ tipo: 'createQueue', topic, tipoCola, idConsumer: null });
         }
 
-        statusManager.topics.push({
+        statusManager.topics.set(topic, {
           topic,
           tipoCola,
           lleno: false,
-          consumers: [],
+          consumers: new Map(),
         });
 
         res.send({ success: true, msg: `Cola creada con el topic ${topic}` });
@@ -110,7 +109,7 @@ setInterval(() => {
 
     app.get('/status', (req, res) => {
       res.send(statusManager);
-    })
+    });
 
     /* FIN HTTP REST PARA PRODUCTORES */
 
@@ -129,26 +128,27 @@ setInterval(() => {
 }, 1000);
 
 function handleMessageOriginal(msg) {
-  if (msg.tipo == "init") {
+  const topic = statusManager.topics.get(msg.topic);
+  if (msg.tipo === "init") {
     console.log(msg);
     statusManager.original = msg.original;
   }
-  else if (msg.msg == 'FULL') {
-    let topic = getTopic(msg.topic, statusManager.topics);
+  else if (msg.msg === 'FULL') {
     topic.lleno = true;
   }
-  else if (msg.msg == 'AVAILABLE') {
-    let topic = getTopic(msg.topic, statusManager.topics);
+  else if (msg.msg === 'AVAILABLE') {
     topic.lleno = false;
-  } else if (msg.tipo == 'enviarMensaje') {
-    const topic = getTopic(msg.topic, statusManager.topics);
+  } else if (msg.tipo === 'enviarMensaje') {
+    console.log(`recibo mensaje: `, msg);
     if (typeof msg.idConsumer !== 'number') {
-      for (var i = 0; i < topic.consumers.length; i++) {
-        const c = topic.consumers[i]
+      console.log(`socket: ${msg.idConsumer}`);
+      const consumers = Array.from(topic.consumers.values());
+      for (let i = 0; i < consumers.length; i++) {
+        const c = consumers[i];
 
         if (!c.working) {
           c.working = true;
-          var socket = getSocket(c.id, sockets).socket
+          let socket = getSocket(c.id, sockets).socket;
           
           if (socket){
             socket.emit('mensaje', { mensaje: msg.mensaje });
@@ -164,14 +164,17 @@ function handleMessageOriginal(msg) {
         }
       }
     } else {
-      for (var i = 0; i < topic.consumers.length; i++) {
-        const c = topic.consumers[i]
-        if (c.id == 0) console.log("ENVIAR",c,msg)
-        if (!c.working && c.id == msg.idConsumer) {
-          if (c.id == 0)  console.log("ENTRE",c)
-          c.working = true;
-          const { socket } = getSocket(c.id, sockets);
-          if (c.id == 0)  console.log("Voy a enviar",msg.mensaje)
+      console.log(`consumers: `, topic.consumers.values());
+      const consumerDefault = topic.consumers.get(0);
+      if (consumerDefault) {
+        console.log("ENVIAR", consumerDefault, msg);
+      } else {
+        const consumer = topic.consumers.get(msg.idConsumer);
+        if (consumer && !consumer.working) {
+          if (consumer.id === 0)  console.log("ENTRE", consumer);
+          consumer.working = true;
+          const { socket } = getSocket(consumer.id, sockets);
+          if (consumer.id === 0)  console.log("Voy a enviar", msg.mensaje);
           socket.emit('mensaje', { mensaje: msg.mensaje });
         }
       }
