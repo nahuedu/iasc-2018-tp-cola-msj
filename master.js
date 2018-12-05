@@ -36,7 +36,7 @@ class Manager {
         this.enviarComoViene(topic, msg);
         break;
       case "toReplica":
-        this.toReplica({ tipo, status });
+        this.toReplica({ tipo, status: status });
         break;
     }
   };

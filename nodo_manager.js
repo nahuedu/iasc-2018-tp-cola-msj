@@ -136,7 +136,7 @@ function handleMessageOriginal(msg) {
   else if (msg.msg === 'AVAILABLE') {
     topic.lleno = false;
   } else if (msg.tipo === 'enviarMensaje') {
-    console.log(`recibo mensaje: `, msg);
+    //console.log(`recibo mensaje: `, msg);
     if (typeof msg.idConsumer !== 'number') {
       console.log(`socket: ${msg.idConsumer}`);
       const consumers = Array.from(topic.consumers.values());
@@ -161,7 +161,7 @@ function handleMessageOriginal(msg) {
         }
       }
     } else {
-      console.log(`consumers: `, topic.consumers.values());
+      //console.log(`consumers: `, topic.consumers.values());
       const consumerDefault = topic.consumers.get(0);
       if (consumerDefault) {
         console.log("ENVIAR", consumerDefault, msg);
@@ -180,13 +180,23 @@ function handleMessageOriginal(msg) {
 }
 
 function handleMessageReplica(msg) {
+  
   switch (msg.tipo) {
     case "init":
       console.log(`Creo manager ${process.pid}`);
       statusManager.original = msg.original;
       break;
-    case 'toReplica':
-      statusManager = msg.status;
+    case 'toReplica':    
+      console.log("Previo status", statusManager)
+      const topics = msg.status.topics
+      console.log("Recibi topics ", topics)
+      for (var i = 0; i < topics.length; i++) {
+
+        topics[i][1].consumers =  new Map(msg.status.topics[i][1].consumers)
+      }
+      const statusObj = {...msg.status, topics: new Map(msg.status.topics)}
+      console.log("Nuevo status", statusObj)
+      statusManager = statusObj;
       statusManager.original = false;
       statusManager.initOriginal = true;
       break;
@@ -195,6 +205,22 @@ function handleMessageReplica(msg) {
 
 setInterval(() => {
   if (statusManager.original) {
-    process.send({ tipo: "toReplica", status: statusManager });
+    var topics = new Map(statusManager.topics)
+    topics = Array.from(topics);
+    var replyTopics = []
+    for (var i = 0; i < topics.length; i++) {
+      const consumers = new Map(topics[i][1].consumers)
+      replyTopics[i] = []
+      replyTopics[i][0] = topics[i][0]
+      replyTopics[i][1] = {
+        topic: topics[i][1].topic,
+        tipoCola: topics[i][1].tipoCola,
+        lleno: topics[i][1].lleno,
+      }
+      replyTopics[i][1].consumers = Array.from(consumers)
+    }
+
+    const statusManagerCopy = {...statusManager, topics: replyTopics}
+    process.send({ tipo: "toReplica", status: statusManagerCopy });
   }
 }, 1000);
