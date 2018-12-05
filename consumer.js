@@ -23,7 +23,7 @@ class Consumer {
 
 	mensaje(msg) {
 		console.log(msg.mensaje);
-		sleep.sleep(5);
+		sleep.sleep(1);
 		this.socket.emit('working', { topic:this.topic, working: false });
 	}
 
