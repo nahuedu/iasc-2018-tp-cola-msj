@@ -82,6 +82,32 @@ setInterval(() => {
       }
     });
 
+    app.get('/queue/:topic', (req, res) => {
+      const { topic } = req.params;
+
+      const result = statusManager.topics.get(topic);
+
+      if (result) {
+        const {
+          topic,
+          tipoCola,
+          lleno,
+          consumers
+        } = result;
+        res.send({
+          success: true, data: {
+            topic,
+            tipoCola,
+            lleno,
+            consumers: Array.from(consumers, ([id, value]) => value)
+          }
+        });
+      }
+      else {
+        res.send({ success: false, msg: `El topic ${topic} no existe` });
+      }
+    });
+
     app.post('/queue', (req, res) => {
       const { topic, tipoCola } = req.body;
 
@@ -101,6 +127,19 @@ setInterval(() => {
       }
       else {
         res.send({ success: false, msg: `El topic ${topic} ya existe` });
+      }
+    });
+
+    app.delete('/queue', (req, res) => {
+      const { topic } = req.body;
+
+      if (statusManager.topics.get(topic)) {
+        statusManager.topics.delete(topic);
+
+        res.send({ success: true, msg: `Cola borrada con el topic ${topic}` });
+      }
+      else {
+        res.send({ success: false, msg: `El topic ${topic} no existe` });
       }
     });
 
@@ -204,15 +243,15 @@ function handleMessageReplica(msg) {
       statusManager.original = msg.original;
       break;
     case 'toReplica':
-      console.log("Previo status", statusManager)
+      console.log("Previo status", JSON.stringify(statusManager))
       const topics = msg.status.topics
-      console.log("Recibi topics ", topics)
+      console.log("Recibi topics ", JSON.stringify(topics))
       for (var i = 0; i < topics.length; i++) {
 
         topics[i][1].consumers = new Map(msg.status.topics[i][1].consumers)
       }
       const statusObj = { ...msg.status, topics: new Map(msg.status.topics) }
-      console.log("Nuevo status", statusObj)
+      console.log("Nuevo status", JSON.stringify(statusObj))
       statusManager = statusObj;
       statusManager.original = false;
       statusManager.initOriginal = true;
