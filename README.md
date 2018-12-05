@@ -9,7 +9,7 @@
 
 ## Run
 ```
-node master.js
+npm start
 ```
 > Si es la primera vez que lo corren no olvidarse de instalar las dependencias antes con un ```npm install```
 ## Uso
