@@ -31,27 +31,13 @@ setInterval(() => {
     console.log(`Soy el nuevo manager original ${process.pid}`);
     /* SOCKET PARA QUE LOS CONSUMIDORES SE CONECTEN */
     io.on('connection', socket => {
-      let idConsumer;
       console.log(`connected: ${socket.id}`);
       socket.on('conectar_topic', msg => {
-        idConsumer = newConsumer(msg, socket, statusManager);
-        sockets.push({ idConsumer, socket });
+        let idConsumer = newConsumer(msg, socket, statusManager);
+        if(idConsumer !== null)
+          sockets.push({ idConsumer, socket });
       });
-
-      socket.on('working', msg => {
-
-        const topic = statusManager.topics.get(msg.topic);
-        if (topic) {
-          const c = topic.consumers.get(idConsumer)
-          c.working = msg.working;
-        }
-
-      });
-
-      socket.on('disconnect', () => {
-        console.log(`disconnected: ${idConsumer}`);
-        process.send({ tipo: 'removeConsumer', consumer: idConsumer });
-      })
+      
     });
 
     app.use(bodyParser.json()); // for parsing application/json
@@ -194,7 +180,6 @@ function handleMessageOriginal(msg) {
   } else if (msg.tipo === 'enviarMensaje') {
     //console.log(`recibo mensaje: `, msg);
     if (typeof msg.idConsumer !== 'number') {
-      console.log(`socket: ${msg.idConsumer}`);
       const consumers = Array.from(topic.consumers.values());
       for (let i = 0; i < consumers.length; i++) {
         const c = consumers[i];
@@ -204,6 +189,7 @@ function handleMessageOriginal(msg) {
           let socket = getSocket(c.id, sockets).socket;
 
           if (socket) {
+            console.log(`Se enviara un mensaje al consumer ${c.id}`);
             socket.emit('mensaje', { mensaje: msg.mensaje });
           }
           else {
@@ -243,15 +229,15 @@ function handleMessageReplica(msg) {
       statusManager.original = msg.original;
       break;
     case 'toReplica':
-      console.log("Previo status", JSON.stringify(statusManager))
+      //console.log("Previo status", JSON.stringify(statusManager))
       const topics = msg.status.topics
-      console.log("Recibi topics ", JSON.stringify(topics))
+      //console.log("Recibi topics ", JSON.stringify(topics))
       for (var i = 0; i < topics.length; i++) {
 
         topics[i][1].consumers = new Map(msg.status.topics[i][1].consumers)
       }
       const statusObj = { ...msg.status, topics: new Map(msg.status.topics) }
-      console.log("Nuevo status", JSON.stringify(statusObj))
+      //console.log("Nuevo status", JSON.stringify(statusObj))
       statusManager = statusObj;
       statusManager.original = false;
       statusManager.initOriginal = true;

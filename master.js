@@ -67,18 +67,6 @@ class Manager {
     }
   }
 
-  sendMsg(topic, msg) {
-    this.queues.forEach(q => q.topic === topic && q.original.nodo.send(msg));
-  }
-
-  consumerRecibeMensajes(topic, msg) {
-    this.queues.forEach(q => q.topic === topic && q.original.nodo.send(msg));
-  }
-
-  removeConsumer(topic, msg) {
-    this.queues.forEach(q => q.topic === topic && q.original.nodo.send(msg));
-  }
-
   toReplica(msg) {
     managerReplica.nodo.send(msg)
   }

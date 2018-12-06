@@ -22,7 +22,23 @@ module.exports = (msg, socket, statusManager) => {
       socket.on('disconnect', () => {
         process.send({ tipo: "deleteQueue", topic: topic.topic, tipoCola: topic.tipoCola, idConsumer: consumer.id });
       });
+    } else {
+      socket.on('disconnect', () => {
+        console.log(`disconnected: ${consumer.id}`);
+        topic.consumers.delete(consumer.id);
+        process.send({ tipo: 'removeConsumer', consumer: consumer.id });
+      })
     }
+
+    socket.on('working', msg => {
+
+      const topic = statusManager.topics.get(msg.topic);
+      if (topic) {
+        const c = topic.consumers.get(consumer.id)
+        c.working = msg.working;
+      }
+
+    });
 
 
     if (newConsumer) {
@@ -31,9 +47,9 @@ module.exports = (msg, socket, statusManager) => {
     } 
 
     socket.emit('status_topic', { success: true, idConsumer: consumer.id });
+    return consumer.id;
   } else {
     socket.emit('status_topic', { success: false, message: "No existe el topic " + msg.topic });
+    return null;
   }
-
-  return consumer.id;
 };

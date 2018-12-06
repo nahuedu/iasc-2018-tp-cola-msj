@@ -25,8 +25,9 @@ function handleMessageOriginal(msg) {
 		case 'consumerRecibeMensajes':
 			if (statusQueue.consumidor === msg.idConsumer || !statusQueue.consumidor) {
 				if (statusQueue.mensajes.length > 0) {
-          const mensaje = statusQueue.mensajes.shift();
-          console.log(`Soy queue ${process.pid}: Resto mensaje: Tengo ${statusQueue.mensajes.length}`);
+					const mensaje = statusQueue.mensajes.shift();
+					console.log(`Soy queue ${process.pid}: Resto mensaje: Tengo ${statusQueue.mensajes.length}`);
+					console.log(`envio a ${statusQueue.consumidor}`)
 					process.send({ tipo: 'enviarMensaje', mensaje, idConsumer: statusQueue.consumidor });
 				}
 				if (statusQueue.mensajes.length < MAXIMO) {
