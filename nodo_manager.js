@@ -178,8 +178,8 @@ function handleMessageOriginal(msg) {
   else if (msg.msg === 'AVAILABLE') {
     topic.lleno = false;
   } else if (msg.tipo === 'enviarMensaje') {
-    //console.log(`recibo mensaje: `, msg);
-    if (typeof msg.idConsumer !== 'number') {
+    
+    if (msg.tipoCola === "cola_de_trabajo") {
       const consumers = Array.from(topic.consumers.values());
       for (let i = 0; i < consumers.length; i++) {
         const c = consumers[i];
@@ -202,8 +202,8 @@ function handleMessageOriginal(msg) {
              */
         }
       }
-    } else {
-      //console.log(`consumers: `, topic.consumers.values());
+    } else {// en este caso msg.tipoCola es publicar_suscribir
+      
       const consumerDefault = topic.consumers.get(0);
       if (consumerDefault) {
         console.log("ENVIAR", consumerDefault, msg);

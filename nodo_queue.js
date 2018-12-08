@@ -28,8 +28,7 @@ function handleMessageOriginal(msg) {
 				if (statusQueue.mensajes.length > 0) {
 					const mensaje = statusQueue.mensajes.shift();
 					console.log(`Soy queue ${process.pid}: Resto mensaje: Tengo ${statusQueue.mensajes.length}`);
-					console.log(`envio a ${statusQueue.consumidor}`)
-					process.send({ tipo: 'enviarMensaje', mensaje, idConsumer: statusQueue.consumidor });
+					process.send({ tipo: 'enviarMensaje', mensaje, idConsumer: statusQueue.consumidor, tipoCola: statusQueue.tipoCola });
 				}
 				if (statusQueue.mensajes.length < MAXIMO) {
 					process.send({ tipo: 'AVAILABLE' });

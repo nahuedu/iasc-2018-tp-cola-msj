@@ -112,14 +112,14 @@ class Queue {
     this.nodo.on('error', () => { });
   }
 
-  handleMessage({ tipo, topic, mensaje, idConsumer, status }) {
+  handleMessage({ tipo, topic, mensaje, idConsumer, status, tipoCola }) {
     switch (tipo) {
       case "FULL":
       case "AVAILABLE":
         this.manager.nodo.send({ topic: this.topic, msg: tipo });
         break;
       case "enviarMensaje":
-        this.manager.nodo.send({ topic: this.topic, tipo, mensaje, idConsumer });
+        this.manager.nodo.send({ topic: this.topic, tipo, mensaje, idConsumer, tipoCola });
         break;
       case "toReplica":
         const replica = this.manager.nodoReplica(this.idQueue);
