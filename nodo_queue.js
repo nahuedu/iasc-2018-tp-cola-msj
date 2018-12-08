@@ -3,6 +3,7 @@ var statusQueue = {
 	mensajes: [],
 	consumidor: false,
 	original: false,
+	tipoCola: null
 };
 
 process.on('message', msg => {
@@ -57,11 +58,15 @@ function handleMessageReplica(msg) {
 			}
 			break;
 		case 'init':
+			statusQueue.tipoCola = msg.tipoCola;
 			statusQueue.consumidor = msg.consumidor;
 			statusQueue.original = msg.original;
 			if (msg.original)
 				process.send({ tipo: "soyOriginal" });
-			console.log(`Soy queue ${process.pid}: Mi consumidor es ${statusQueue.consumidor} y original es ${statusQueue.original}`);
+			if(statusQueue.tipoCola == "cola_de_trabajo")
+				console.log(`Nuevo nodo queue con topic:${msg.topic} | pid:${process.pid} | original:${statusQueue.original} | tipo:${statusQueue.tipoCola}`);
+			if(statusQueue.tipoCola == "publicar_suscribir")
+				console.log(`Nuevo nodo queue con topic:${msg.topic} | pid:${process.pid} | original:${statusQueue.original} | tipo:${statusQueue.tipoCola} | consumer:${statusQueue.consumidor}`);			
 			break;
 		case 'toReplica':
 			statusQueue = msg.status;

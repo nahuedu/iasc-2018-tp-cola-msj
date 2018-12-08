@@ -99,7 +99,7 @@ setInterval(() => {
 
       if (!statusManager.topics.get(topic)) {
         if (tipoCola === 'cola_de_trabajo') {
-          process.send({ tipo: 'createQueue', topic, tipoCola, idConsumer: null });
+          process.send({ tipo: 'createQueue', topic, tipoCola });
         }
 
         statusManager.topics.set(topic, {

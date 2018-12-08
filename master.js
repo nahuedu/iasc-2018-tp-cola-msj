@@ -41,13 +41,13 @@ class Manager {
     }
   };
 
-  createQueue(topic, tipo, consumidor) {
+  createQueue(topic, tipoCola, consumidor) {
     const idQueue = ++this.queueCounter;
     const queue = new Queue(this, topic, idQueue, true, consumidor);
-    queue.nodo.send({ tipo: "init", consumidor, original: true });
+    queue.nodo.send({ tipo: "init", consumidor, original: true , tipoCola, topic});
 
     const queueReplica = new Queue(this, topic, idQueue, false, consumidor);
-    queueReplica.nodo.send({ tipo: "init", consumidor, original: false });
+    queueReplica.nodo.send({ tipo: "init", consumidor, original: false , tipoCola, topic});
 
     console.log(`Queue creada: ${topic} nodo queue: ${queue.nodo.pid} nodo replica: ${queueReplica.nodo.pid}`);
     this.queues.push({ idQueue, topic, original: queue, replica: queueReplica });
