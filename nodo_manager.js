@@ -6,6 +6,7 @@ const io = require('socket.io')(http);
 const newConsumer = require('./utils/newConsumer');
 const getSocket = require('./utils/getSocket');
 const conn = require('./utils/Connections');
+const getNextConsumer = require('./utils/getNextConsumer');
 io.origins('*:*');
 
 const sockets = [];
@@ -107,6 +108,7 @@ setInterval(() => {
           tipoCola,
           lleno: false,
           consumers: new Map(),
+          lastConsumerId: null
         });
 
         res.send({ success: true, msg: `Cola creada con el topic ${topic}` });
@@ -181,27 +183,34 @@ function handleMessageOriginal(msg) {
     
     if (msg.tipoCola === "cola_de_trabajo") {
       const consumers = Array.from(topic.consumers.values());
-      for (let i = 0; i < consumers.length; i++) {
-        const c = consumers[i];
+      var consumerSeleccionado = null
 
-        if (!c.working) {
-          c.working = true;
-          let socket = getSocket(c.id, sockets).socket;
-
-          if (socket) {
-            console.log(`Se enviara un mensaje al consumer ${c.id}`);
-            socket.emit('mensaje', { mensaje: msg.mensaje });
-          }
-          else {
-            console.log("No encuentro socket para enviar mensaje", msg)
-          }
-          break;
-          /*   setTimeout(() => {
-               //si a los 10 segundos no confirmo accion, reencolar
-             }, 10000);
-             */
-        }
+      //selecciono el consumer al que va el mensaje segun round robin
+      if(topic.lastConsumerId == null) //es la primera vez que se envia un mensaje
+        consumerSeleccionado = consumers[0]
+      else
+      {
+        consumerSeleccionado = getNextConsumer(consumers, topic.lastConsumerId);
       }
+
+      if (!consumerSeleccionado.working) {
+        consumerSeleccionado.working = true;
+        let socket = getSocket(consumerSeleccionado.id, sockets).socket;
+
+        if (socket) {
+          console.log(`Se enviara un mensaje al consumer ${consumerSeleccionado.id}`);
+          socket.emit('mensaje', { mensaje: msg.mensaje });
+          topic.lastConsumerId = consumerSeleccionado.id;
+        }
+        else {
+          console.log("No encuentro socket para enviar mensaje", msg)
+        }
+        /*   setTimeout(() => {
+              //si a los 10 segundos no confirmo accion, reencolar
+            }, 10000);
+            */
+      }
+      
     } else {// en este caso msg.tipoCola es publicar_suscribir
       
       const consumerDefault = topic.consumers.get(0);

@@ -1,4 +1,5 @@
 const getConsumerById = require('./getConsumerById');
+const getPreviousConsumer = require('./getPreviousConsumer');
 
 module.exports = (msg, socket, statusManager) => {
   const topic = statusManager.topics.get(msg.topic);
@@ -25,6 +26,9 @@ module.exports = (msg, socket, statusManager) => {
     } else {
       socket.on('disconnect', () => {
         console.log(`disconnected: ${consumer.id}`);
+        if(topic.lastConsumerId == consumer.id){
+          topic.lastConsumerId = getPreviousConsumer(Array.from(topic.consumers.values()), topic.lastConsumerId).id
+        }
         topic.consumers.delete(consumer.id);
         process.send({ tipo: 'removeConsumer', consumer: consumer.id });
       })
