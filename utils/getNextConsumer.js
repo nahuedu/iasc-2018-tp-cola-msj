@@ -9,6 +9,7 @@ function getNextConsumer(consumers, consumerId){
                 return consumers[i+1]
         }
     }
+    return consumers[0];
 
 }
 
