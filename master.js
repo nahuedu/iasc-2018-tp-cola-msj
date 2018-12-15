@@ -1,4 +1,6 @@
 const { fork } = require('child_process');
+var nextPort = 3010
+const QUEUE_HOST = 'localhost'
 
 class Manager {
   constructor(original) {
@@ -43,11 +45,12 @@ class Manager {
 
   createQueue(topic, tipoCola, consumidor) {
     const idQueue = ++this.queueCounter;
-    const queue = new Queue(this, topic, idQueue, true, consumidor);
-    queue.nodo.send({ tipo: "init", consumidor, original: true , tipoCola, topic});
+    const port = nextPort++;
+    const queue = new Queue(this, topic, idQueue, true, consumidor, QUEUE_HOST, port, tipoCola);
+    queue.nodo.send({ tipo: "init", consumidor, original: true , tipoCola, topic, host: QUEUE_HOST, port: queue.port});
 
-    const queueReplica = new Queue(this, topic, idQueue, false, consumidor);
-    queueReplica.nodo.send({ tipo: "init", consumidor, original: false , tipoCola, topic});
+    const queueReplica = new Queue(this, topic, idQueue, false, consumidor, QUEUE_HOST, port, tipoCola);
+    queueReplica.nodo.send({ tipo: "init", consumidor, original: false , tipoCola, topic, host: QUEUE_HOST,port: queue.port});
 
     console.log(`Queue creada: ${topic} nodo queue: ${queue.nodo.pid} nodo replica: ${queueReplica.nodo.pid}`);
     this.queues.push({ idQueue, topic, original: queue, replica: queueReplica });
@@ -79,13 +82,12 @@ class Manager {
   queueKilled(idQueue, original, consumidor) {
     const element = this.queues.find(q => q.idQueue === idQueue);
 
-    const replica = new Queue(this, element.topic, idQueue, false, consumidor);
-    replica.nodo.send({ tipo: "init", consumidor, original: false });
+    const replica = new Queue(this, element.topic, idQueue, false, consumidor, QUEUE_HOST, element.original.port, element.original.tipoCola);
+    replica.nodo.send({ tipo: "init", consumidor, original: false, tipoCola: element.original.tipoCola, topic: element.topic,  host: QUEUE_HOST, port: element.original.port });
 
-    console.log(original);
     if (original) {
       element.original = element.replica;
-      element.original.nodo.send({ tipo: "init", consumidor, original: true });
+      element.original.nodo.send({ tipo: "init", consumidor, original: true , tipoCola: element.original.tipoCola, topic: element.topic, host: QUEUE_HOST,port: element.original.port });
     }
 
     console.log("Replica reemplazada");
@@ -94,7 +96,10 @@ class Manager {
 }
 
 class Queue {
-  constructor(manager, topic, idQueue, original, consumidor) {
+  constructor(manager, topic, idQueue, original, consumidor, host, port, tipoCola) {
+    this.port = port;
+    this.host = host;
+    this.tipoCola = tipoCola;
     this.idQueue = idQueue;
     this.topic = topic;
     this.manager = manager;
@@ -112,7 +117,7 @@ class Queue {
     this.nodo.on('error', () => { });
   }
 
-  handleMessage({ tipo, topic, mensaje, idConsumer, status, tipoCola }) {
+  handleMessage({ tipo, topic, mensaje, idConsumer, status, tipoCola, mensajes }) {
     switch (tipo) {
       case "FULL":
       case "AVAILABLE":
@@ -124,7 +129,7 @@ class Queue {
       case "toReplica":
         const replica = this.manager.nodoReplica(this.idQueue);
         if (replica)
-          replica.nodo.send({ tipo, status });
+          replica.nodo.send({ tipo, mensajes });
         break;
       case "soyOriginal":
         this.original = true;
