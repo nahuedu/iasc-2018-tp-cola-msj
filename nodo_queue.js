@@ -34,6 +34,8 @@ function handleMessageOriginal(msg) {
 			}
 			break;
 		case 'consumerRecibeMensajes':
+			//console.log("consumer recibe mensajes",msg);
+			//console.log("statusqueue",statusQueue);
 			if (statusQueue.consumidor === msg.idConsumer || !statusQueue.consumidor) {
 				if (statusQueue.mensajes.length > 0) {
 					const mensaje = statusQueue.mensajes.shift();
@@ -47,14 +49,14 @@ function handleMessageOriginal(msg) {
 				}
 			}
 			break;
-		case 'sendMsg':
+		/*case 'sendMsg':
 			statusQueue.mensajes.push(msg.msg);
 			statusQueue.mensajesReplicar.push({add: true, msg: msg.msg});
 			console.log(`Soy queue ${process.pid}: Sumo mensaje: Tengo ${statusQueue.mensajes.length}`);
 			if (statusQueue.mensajes.length >= MAXIMO) {
 				process.send({ tipo: 'FULL' });
 			}
-			break;
+			break;*/
 		default:
 			console.log(msg);
 	}
@@ -120,8 +122,21 @@ function init(msg) {
 						statusQueue.mensajesReplicar = []
 					}
 				}, 1000);
-	    });
+		});
+		
+		this.socketWithManager = ioClient(`http://localhost:${msg.portWithManager}`);
+		this.socketWithManager.on('newMessages', msg => {
+			statusQueue.mensajes.push(msg.msg);
+			statusQueue.mensajesReplicar.push({add: true, msg: msg.msg});
+			console.log(`Soy queue ${process.pid}: Sumo mensaje: Tengo ${statusQueue.mensajes.length}`);
+			if (statusQueue.mensajes.length >= MAXIMO) {
+				process.send({ tipo: 'FULL' });
+			}
+		});
+
 	} else {
+		//console.log("init de cola original con msg:",msg)
+
 		socketMaster = ioClient(`http://localhost:${msg.port}`);
 		socketMaster.on('toReplica', msg => {
 				console.log("envio",msg)

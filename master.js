@@ -1,8 +1,13 @@
 const { fork } = require('child_process');
 var nextPort = 3010
-const QUEUE_HOST = 'localhost'
+const QUEUE_HOST = 'localhost';
+const express = require('express');
+const app = express();
+const http = require('http').Server(app);
+const io = require('socket.io')(http);
 
 class Manager {
+
   constructor(original) {
     this.original = original;
     this.queues = [];
@@ -29,7 +34,7 @@ class Manager {
         this.deleteQueue(topic, tipoCola, idConsumer);
         break;
       case "sendMsg":
-        this.enviarComoViene(topic, { tipo, topic, tipoCola, idConsumer, msg });
+        this.enviarComoVienePorSocket(topic, { tipo, topic, tipoCola, idConsumer, msg });
         break;
       case "consumerRecibeMensajes":
         this.enviarComoViene(topic, { tipo, topic, tipoCola, idConsumer, msg });
@@ -46,11 +51,13 @@ class Manager {
   createQueue(topic, tipoCola, consumidor) {
     const idQueue = ++this.queueCounter;
     const port = nextPort++;
-    const queue = new Queue(this, topic, idQueue, true, consumidor, QUEUE_HOST, port, tipoCola);
-    queue.nodo.send({ tipo: "init", consumidor, original: true , tipoCola, topic, host: QUEUE_HOST, port: queue.port});
+    const portWithManager = nextPort++;
+    const queue = new Queue(this, topic, idQueue, true, consumidor, QUEUE_HOST, port,portWithManager, tipoCola);
+    queue.nodo.send({ tipo: "init", consumidor, original: true , tipoCola, topic, host: QUEUE_HOST, port: queue.port, portWithManager: queue.portWithManager});
 
-    const queueReplica = new Queue(this, topic, idQueue, false, consumidor, QUEUE_HOST, port, tipoCola);
-    queueReplica.nodo.send({ tipo: "init", consumidor, original: false , tipoCola, topic, host: QUEUE_HOST,port: queue.port});
+    const portReplica = nextPort++;
+    const queueReplica = new Queue(this, topic, idQueue, false, consumidor, QUEUE_HOST, portReplica, portWithManager, tipoCola);
+    queueReplica.nodo.send({ tipo: "init", consumidor, original: false , tipoCola, topic, host: QUEUE_HOST,port: queue.port, portWithManager: queue.portWithManager });
 
     console.log(`Queue creada: ${topic} nodo queue: ${queue.nodo.pid} nodo replica: ${queueReplica.nodo.pid}`);
     this.queues.push({ idQueue, topic, original: queue, replica: queueReplica });
@@ -63,10 +70,20 @@ class Manager {
     }
   }
 
+  enviarComoVienePorSocket(topic, msg) {
+    for (var i = 0; i < this.queues.length; i++) {
+      if (this.queues[i].topic === topic)
+        //console.log("emitiendo",msg);
+        this.queues[i].original.socket.emit('newMessages',{
+          msg: msg
+        });
+    }
+  }
+
   enviarComoViene(topic, msg) {
     for (var i = 0; i < this.queues.length; i++) {
       if (this.queues[i].topic === topic)
-        this.queues[i].original.nodo.send(msg)
+        this.queues[i].original.nodo.send(msg);
     }
   }
 
@@ -96,8 +113,9 @@ class Manager {
 }
 
 class Queue {
-  constructor(manager, topic, idQueue, original, consumidor, host, port, tipoCola) {
+  constructor(manager, topic, idQueue, original, consumidor, host, port,portWithManager, tipoCola) {
     this.port = port;
+    this.portWithManager = portWithManager;
     this.host = host;
     this.tipoCola = tipoCola;
     this.idQueue = idQueue;
@@ -115,6 +133,17 @@ class Queue {
       }
     });
     this.nodo.on('error', () => { });
+    if(original){
+      http.listen({ host: host, port: portWithManager }, () => {
+	      console.log(`Recibiendo conexion de nodo ${host}:${portWithManager}`);
+	    });
+
+	    io.on('connection', function(socket){
+          //console.log("recibio una conexion de nodo",socket);
+          this.socket = socket;
+      }.bind(this));
+      
+    }
   }
 
   handleMessage({ tipo, topic, mensaje, idConsumer, status, tipoCola, mensajes }) {
