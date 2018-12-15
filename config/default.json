@@ -2,6 +2,7 @@
   "manager": {
     "host": "localhost",
     "consumer-port": 3000,
-    "producer-port": 9000
+    "producer-port": 9000,
+    "replication-port": 9001
   }
 }
