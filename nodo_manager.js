@@ -9,7 +9,7 @@ const conn = require('./utils/Connections');
 const getNextConsumer = require('./utils/getNextConsumer');
 const ioClient = require('socket.io-client');
 const httpRepl = require('http').Server(app);
-const ioRepl = require('socket.io')(http);
+const ioRepl = require('socket.io')(httpRepl);
 io.origins('*:*');
 
 const sockets = [];
@@ -258,7 +258,6 @@ function handleMessageReplica(msg) {
       } else {
         socketMaster = ioClient(`http://${conn.host}:${conn.replicationPort}`);
         socketMaster.on('toReplica', msg => {
-          
           handleUpdateStatusReplica(msg)
         });
       }
