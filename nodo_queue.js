@@ -139,7 +139,7 @@ function init(msg) {
 
 		socketMaster = ioClient(`http://localhost:${msg.port}`);
 		socketMaster.on('toReplica', msg => {
-				console.log("envio",msg)
+				//console.log("envio",msg)
 			 	manageReplicaMsg(msg)
 			});
 	}

@@ -7,9 +7,13 @@ const newConsumer = require('./utils/newConsumer');
 const getSocket = require('./utils/getSocket');
 const conn = require('./utils/Connections');
 const getNextConsumer = require('./utils/getNextConsumer');
+const ioClient = require('socket.io-client');
+const httpRepl = require('http').Server(app);
+const ioRepl = require('socket.io')(httpRepl);
 io.origins('*:*');
 
 const sockets = [];
+var socketMaster = null;
 
 let statusManager = {
   topics: new Map(),
@@ -236,25 +240,49 @@ function handleMessageReplica(msg) {
     case "init":
       console.log(`Creo manager ${process.pid}`);
       statusManager.original = msg.original;
-      break;
-    case 'toReplica':
-      //console.log("Previo status", JSON.stringify(statusManager))
-      const topics = msg.status.topics
-      //console.log("Recibi topics ", JSON.stringify(topics))
-      for (var i = 0; i < topics.length; i++) {
+      if (statusManager.original) {
 
-        topics[i][1].consumers = new Map(msg.status.topics[i][1].consumers)
+        if (socketMaster) socketMaster.disconnect() //Si fue replica, debe desconectarse del antiguo master
+
+        httpRepl.listen({ host: conn.host, port: conn.replicationPort }, () => {
+          console.log(`Recibiendo conexiones de replicacion ${conn.host}:${conn.replicationPort}`);
+        });
+
+        ioRepl.on('connection', socket => {
+          console.log(`connected to replication port: ${socket.id}`);
+          setInterval(() => {
+            enviarStatusAReplica(socket)
+          }, 1000);
+        });
+
+      } else {
+        socketMaster = ioClient(`http://${conn.host}:${conn.replicationPort}`);
+        socketMaster.on('toReplica', msg => {
+          //console.log(`recibido nuevo status del manager master ${JSON.stringify(msg.status)}`)
+          handleUpdateStatusReplica(msg)
+        });
       }
-      const statusObj = { ...msg.status, topics: new Map(msg.status.topics) }
-      //console.log("Nuevo status", JSON.stringify(statusObj))
-      statusManager = statusObj;
-      statusManager.original = false;
-      statusManager.initOriginal = true;
+
       break;
   }
 }
 
-setInterval(() => {
+function handleUpdateStatusReplica(msg) {
+  //console.log("Previo status", JSON.stringify(statusManager))
+  const topics = msg.status.topics
+  //console.log("Recibi topics ", JSON.stringify(topics))
+  for (var i = 0; i < topics.length; i++) {
+
+    topics[i][1].consumers = new Map(msg.status.topics[i][1].consumers)
+  }
+  const statusObj = { ...msg.status, topics: new Map(msg.status.topics) }
+  //console.log("Nuevo status", JSON.stringify(statusObj))
+  statusManager = statusObj;
+  statusManager.original = false;
+  statusManager.initOriginal = true;
+}
+
+function enviarStatusAReplica(socket) {
   if (statusManager.original) {
     var topics = new Map(statusManager.topics)
     topics = Array.from(topics);
@@ -272,6 +300,6 @@ setInterval(() => {
     }
 
     const statusManagerCopy = { ...statusManager, topics: replyTopics }
-    process.send({ tipo: "toReplica", status: statusManagerCopy });
+    socket.emit('toReplica', { status: statusManagerCopy });
   }
-}, 1000);
+}
