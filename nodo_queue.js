@@ -2,8 +2,9 @@ const express = require('express');
 const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
-const ioClient = require('socket.io-client');
 io.origins('*:*');
+const ioClient = require('socket.io-client');
+
 const conn = require('./utils/Connections');
 
 var MAXIMO = 1000;
@@ -123,7 +124,7 @@ function init(msg) {
 					}
 				}, 1000);
 		});
-		
+		console.log("mensaje de init recibido en nodo ",msg);
 		this.socketWithManager = ioClient(`http://localhost:${msg.portWithManager}`);
 		this.socketWithManager.on('newMessages', msg => {
 			statusQueue.mensajes.push(msg.msg);

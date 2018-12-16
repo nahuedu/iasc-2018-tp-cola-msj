@@ -25,10 +25,10 @@ class Manager {
     });
   }
 
-  handleMessage({ tipo, topic, tipoCola, idConsumer, msg, status }) {
+  handleMessage({ tipo, topic, tipoCola, idConsumer, msg, status,managerPort }) {
     switch (tipo) {
       case "createQueue":
-        this.createQueue(topic, tipoCola, idConsumer);
+        this.createQueue(topic, tipoCola, idConsumer,managerPort);
         break;
       case "deleteQueue":
         this.deleteQueue(topic, tipoCola, idConsumer);
@@ -48,10 +48,10 @@ class Manager {
     }
   };
 
-  createQueue(topic, tipoCola, consumidor) {
+  createQueue(topic, tipoCola, consumidor,managerPort) {
     const idQueue = ++this.queueCounter;
     const port = nextPort++;
-    const portWithManager = nextPort++;
+    const portWithManager = managerPort;
     const queue = new Queue(this, topic, idQueue, true, consumidor, QUEUE_HOST, port,portWithManager, tipoCola);
     queue.nodo.send({ tipo: "init", consumidor, original: true , tipoCola, topic, host: QUEUE_HOST, port: queue.port, portWithManager: queue.portWithManager});
 
@@ -74,9 +74,7 @@ class Manager {
     for (var i = 0; i < this.queues.length; i++) {
       if (this.queues[i].topic === topic)
         //console.log("emitiendo",msg);
-        this.queues[i].original.socket.emit('newMessages',{
-          msg: msg
-        });
+        managerOriginal.nodo.send({tipo: "newMessages",topic:topic,message: msg});
     }
   }
 
@@ -133,17 +131,6 @@ class Queue {
       }
     });
     this.nodo.on('error', () => { });
-    if(original){
-      http.listen({ host: host, port: portWithManager }, () => {
-	      console.log(`Recibiendo conexion de nodo ${host}:${portWithManager}`);
-	    });
-
-	    io.on('connection', function(socket){
-          //console.log("recibio una conexion de nodo",socket);
-          this.socket = socket;
-      }.bind(this));
-      
-    }
   }
 
   handleMessage({ tipo, topic, mensaje, idConsumer, status, tipoCola, mensajes }) {

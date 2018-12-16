@@ -10,7 +10,10 @@ const getNextConsumer = require('./utils/getNextConsumer');
 const ioClient = require('socket.io-client');
 const httpRepl = require('http').Server(app);
 const ioRepl = require('socket.io')(httpRepl);
+const httpNodes = require('http').Server(app);
+const ioNodes = require('socket.io')(httpNodes);
 io.origins('*:*');
+var managerPort = 010;
 
 const sockets = [];
 var socketMaster = null;
@@ -103,17 +106,27 @@ setInterval(() => {
       const { topic, tipoCola } = req.body;
 
       if (!statusManager.topics.get(topic)) {
-        if (tipoCola === 'cola_de_trabajo') {
-          process.send({ tipo: 'createQueue', topic, tipoCola });
-        }
-
-        statusManager.topics.set(topic, {
-          topic,
-          tipoCola,
-          lleno: false,
-          consumers: new Map(),
-          lastConsumerId: null
+      
+        const newManagerPort = managerPort++;
+        httpNodes.listen({ host: "localhost", port: newManagerPort }, () => {
+          console.log(`Recibiendo conexion de nodo ${"localhost"}:${newManagerPort}`);
         });
+  
+        ioNodes.on('connection', socket => {
+            console.log(`queue connected: ${socket.id}`);
+            statusManager.topics.set(topic, {
+              topic,
+              tipoCola,
+              lleno: false,
+              consumers: new Map(),
+              lastConsumerId: null,
+              socket: socket
+            });
+          });
+      
+        if (tipoCola === 'cola_de_trabajo') {
+          process.send({ tipo: 'createQueue', topic, tipoCola, idConsumer:undefined, msg:undefined, status:undefined, managerPort: newManagerPort });
+        }
 
         res.send({ success: true, msg: `Cola creada con el topic ${topic}` });
       }
@@ -183,6 +196,10 @@ function handleMessageOriginal(msg) {
   }
   else if (msg.msg === 'AVAILABLE') {
     topic.lleno = false;
+  } else if (msg.tipo === 'newMessages') {
+    topic.socket.emit("newMessages",{
+      msg: msg
+    });
   } else if (msg.tipo === 'enviarMensaje') {
     
     if (msg.tipoCola === "cola_de_trabajo") {
