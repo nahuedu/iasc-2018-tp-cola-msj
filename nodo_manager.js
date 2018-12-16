@@ -111,8 +111,10 @@ setInterval(() => {
         httpNodes.listen({ host: "localhost", port: newManagerPort }, () => {
           console.log(`Recibiendo conexion de nodo ${"localhost"}:${newManagerPort}`);
         });
-  
-        ioNodes.on('connection', socket => {
+      
+        if (tipoCola === 'cola_de_trabajo') {
+          
+          ioNodes.on('connection', socket => {
             console.log(`queue connected: ${socket.id}`);
             statusManager.topics.set(topic, {
               topic,
@@ -123,8 +125,7 @@ setInterval(() => {
               socket: socket
             });
           });
-      
-        if (tipoCola === 'cola_de_trabajo') {
+
           process.send({ tipo: 'createQueue', topic, tipoCola, idConsumer:undefined, msg:undefined, status:undefined, managerPort: newManagerPort });
         }
 
