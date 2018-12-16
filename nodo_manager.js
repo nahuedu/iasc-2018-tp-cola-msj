@@ -242,7 +242,7 @@ function handleMessageReplica(msg) {
       statusManager.original = msg.original;
       if (statusManager.original) {
 
-        //if (socketMaster) socketMaster.disconnect() //Si fue replica, debe desconectarse del antiguo master
+        if (socketMaster) socketMaster.disconnect() //Si fue replica, debe desconectarse del antiguo master
 
         httpRepl.listen({ host: conn.host, port: conn.replicationPort }, () => {
           console.log(`Recibiendo conexiones de replicacion ${conn.host}:${conn.replicationPort}`);
@@ -258,6 +258,7 @@ function handleMessageReplica(msg) {
       } else {
         socketMaster = ioClient(`http://${conn.host}:${conn.replicationPort}`);
         socketMaster.on('toReplica', msg => {
+          //console.log(`recibido nuevo status del manager master ${JSON.stringify(msg.status)}`)
           handleUpdateStatusReplica(msg)
         });
       }
