@@ -10,8 +10,6 @@ const getNextConsumer = require('./utils/getNextConsumer');
 const ioClient = require('socket.io-client');
 const httpRepl = require('http').Server(app);
 const ioRepl = require('socket.io')(httpRepl);
-let httpNodes = require('http').Server(app);
-let ioNodes = require('socket.io')(httpNodes);
 io.origins('*:*');
 var managerPort = 010;
 
@@ -108,8 +106,8 @@ setInterval(() => {
       if (!statusManager.topics.get(topic)) {
 
         const newManagerPort = managerPort++;
-        let httpNodes = require('http').Server(app);
-        let ioNodes = require('socket.io')(httpNodes);
+        const httpNodes = require('http').Server(app);
+        const ioNodes = require('socket.io')(httpNodes);
         httpNodes.listen({ host: "localhost", port: newManagerPort }, () => {
           console.log(`Recibiendo conexion de nodo ${"localhost"}:${newManagerPort}`);
         });
