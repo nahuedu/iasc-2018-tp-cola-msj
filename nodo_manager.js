@@ -10,8 +10,8 @@ const getNextConsumer = require('./utils/getNextConsumer');
 const ioClient = require('socket.io-client');
 const httpRepl = require('http').Server(app);
 const ioRepl = require('socket.io')(httpRepl);
-const httpNodes = require('http').Server(app);
-const ioNodes = require('socket.io')(httpNodes);
+let httpNodes = require('http').Server(app);
+let ioNodes = require('socket.io')(httpNodes);
 io.origins('*:*');
 var managerPort = 010;
 
@@ -42,10 +42,10 @@ setInterval(() => {
       console.log(`connected: ${socket.id}`);
       socket.on('conectar_topic', msg => {
         let idConsumer = newConsumer(msg, socket, statusManager);
-        if(idConsumer !== null)
+        if (idConsumer !== null)
           sockets.push({ idConsumer, socket });
       });
-      
+
     });
 
     app.use(bodyParser.json()); // for parsing application/json
@@ -106,14 +106,16 @@ setInterval(() => {
       const { topic, tipoCola } = req.body;
 
       if (!statusManager.topics.get(topic)) {
-      
+
         const newManagerPort = managerPort++;
+        let httpNodes = require('http').Server(app);
+        let ioNodes = require('socket.io')(httpNodes);
         httpNodes.listen({ host: "localhost", port: newManagerPort }, () => {
           console.log(`Recibiendo conexion de nodo ${"localhost"}:${newManagerPort}`);
         });
-      
+
         if (tipoCola === 'cola_de_trabajo') {
-          
+
           ioNodes.on('connection', socket => {
             console.log(`queue connected: ${socket.id}`);
             statusManager.topics.set(topic, {
@@ -126,7 +128,7 @@ setInterval(() => {
             });
           });
 
-          process.send({ tipo: 'createQueue', topic, tipoCola, idConsumer:undefined, msg:undefined, status:undefined, managerPort: newManagerPort });
+          process.send({ tipo: 'createQueue', topic, tipoCola, idConsumer: undefined, msg: undefined, status: undefined, managerPort: newManagerPort });
         }
 
         res.send({ success: true, msg: `Cola creada con el topic ${topic}` });
@@ -198,20 +200,19 @@ function handleMessageOriginal(msg) {
   else if (msg.msg === 'AVAILABLE') {
     topic.lleno = false;
   } else if (msg.tipo === 'newMessages') {
-    topic.socket.emit("newMessages",{
+    topic.socket.emit("newMessages", {
       msg: msg
     });
   } else if (msg.tipo === 'enviarMensaje') {
-    
+
     if (msg.tipoCola === "cola_de_trabajo") {
       const consumers = Array.from(topic.consumers.values());
       var consumerSeleccionado = null
 
       //selecciono el consumer al que va el mensaje segun round robin
-      if(topic.lastConsumerId == null) //es la primera vez que se envia un mensaje
+      if (topic.lastConsumerId == null) //es la primera vez que se envia un mensaje
         consumerSeleccionado = consumers[0]
-      else
-      {
+      else {
         consumerSeleccionado = getNextConsumer(consumers, topic.lastConsumerId);
       }
 
@@ -232,9 +233,9 @@ function handleMessageOriginal(msg) {
             }, 10000);
             */
       }
-      
+
     } else {// en este caso msg.tipoCola es publicar_suscribir
-      
+
       const consumerDefault = topic.consumers.get(0);
       if (consumerDefault) {
         console.log("ENVIAR", consumerDefault, msg);

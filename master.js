@@ -25,10 +25,10 @@ class Manager {
     });
   }
 
-  handleMessage({ tipo, topic, tipoCola, idConsumer, msg, status,managerPort }) {
+  handleMessage({ tipo, topic, tipoCola, idConsumer, msg, status, managerPort }) {
     switch (tipo) {
       case "createQueue":
-        this.createQueue(topic, tipoCola, idConsumer,managerPort);
+        this.createQueue(topic, tipoCola, idConsumer, managerPort);
         break;
       case "deleteQueue":
         this.deleteQueue(topic, tipoCola, idConsumer);
@@ -48,16 +48,17 @@ class Manager {
     }
   };
 
-  createQueue(topic, tipoCola, consumidor,managerPort) {
+  createQueue(topic, tipoCola, consumidor, managerPort) {
+    console.log(`@createQueue topic ${topic}, tipoCola ${tipoCola}, consumidor ${consumidor}, managerPort ${managerPort}`)
     const idQueue = ++this.queueCounter;
     const port = nextPort++;
     const portWithManager = managerPort;
-    const queue = new Queue(this, topic, idQueue, true, consumidor, QUEUE_HOST, port,portWithManager, tipoCola);
-    queue.nodo.send({ tipo: "init", consumidor, original: true , tipoCola, topic, host: QUEUE_HOST, port: queue.port, portWithManager: queue.portWithManager});
+    const queue = new Queue(this, topic, idQueue, true, consumidor, QUEUE_HOST, port, portWithManager, tipoCola);
+    queue.nodo.send({ tipo: "init", consumidor, original: true, tipoCola, topic, host: QUEUE_HOST, port: queue.port, portWithManager: queue.portWithManager });
 
     const portReplica = nextPort++;
     const queueReplica = new Queue(this, topic, idQueue, false, consumidor, QUEUE_HOST, portReplica, portWithManager, tipoCola);
-    queueReplica.nodo.send({ tipo: "init", consumidor, original: false , tipoCola, topic, host: QUEUE_HOST,port: queue.port, portWithManager: queue.portWithManager });
+    queueReplica.nodo.send({ tipo: "init", consumidor, original: false, tipoCola, topic, host: QUEUE_HOST, port: queue.port, portWithManager: queue.portWithManager });
 
     console.log(`Queue creada: ${topic} nodo queue: ${queue.nodo.pid} nodo replica: ${queueReplica.nodo.pid}`);
     this.queues.push({ idQueue, topic, original: queue, replica: queueReplica });
@@ -74,7 +75,7 @@ class Manager {
     for (var i = 0; i < this.queues.length; i++) {
       if (this.queues[i].topic === topic)
         //console.log("emitiendo",msg);
-        managerOriginal.nodo.send({tipo: "newMessages",topic:topic,message: msg});
+        managerOriginal.nodo.send({ tipo: "newMessages", topic: topic, message: msg });
     }
   }
 
@@ -98,11 +99,11 @@ class Manager {
     const element = this.queues.find(q => q.idQueue === idQueue);
 
     const replica = new Queue(this, element.topic, idQueue, false, consumidor, QUEUE_HOST, element.original.port, element.original.tipoCola);
-    replica.nodo.send({ tipo: "init", consumidor, original: false, tipoCola: element.original.tipoCola, topic: element.topic,  host: QUEUE_HOST, port: element.original.port });
+    replica.nodo.send({ tipo: "init", consumidor, original: false, tipoCola: element.original.tipoCola, topic: element.topic, host: QUEUE_HOST, port: element.original.port });
 
     if (original) {
       element.original = element.replica;
-      element.original.nodo.send({ tipo: "init", consumidor, original: true , tipoCola: element.original.tipoCola, topic: element.topic, host: QUEUE_HOST,port: element.original.port });
+      element.original.nodo.send({ tipo: "init", consumidor, original: true, tipoCola: element.original.tipoCola, topic: element.topic, host: QUEUE_HOST, port: element.original.port });
     }
 
     console.log("Replica reemplazada");
@@ -111,7 +112,7 @@ class Manager {
 }
 
 class Queue {
-  constructor(manager, topic, idQueue, original, consumidor, host, port,portWithManager, tipoCola) {
+  constructor(manager, topic, idQueue, original, consumidor, host, port, portWithManager, tipoCola) {
     this.port = port;
     this.portWithManager = portWithManager;
     this.host = host;

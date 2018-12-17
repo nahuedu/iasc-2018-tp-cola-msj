@@ -40,7 +40,7 @@ function handleMessageOriginal(msg) {
 			if (statusQueue.consumidor === msg.idConsumer || !statusQueue.consumidor) {
 				if (statusQueue.mensajes.length > 0) {
 					const mensaje = statusQueue.mensajes.shift();
-					statusQueue.mensajesReplicar.push({add: false, msg: msg.msg});
+					statusQueue.mensajesReplicar.push({ add: false, msg: msg.msg });
 					console.log(`Soy queue ${process.pid}: Resto mensaje: Tengo ${statusQueue.mensajes.length}`);
 					process.send({ tipo: 'enviarMensaje', mensaje, idConsumer: statusQueue.consumidor, tipoCola: statusQueue.tipoCola });
 					console.log({ tipo: 'enviarMensaje', mensaje, idConsumer: statusQueue.consumidor, tipoCola: statusQueue.tipoCola })
@@ -81,9 +81,9 @@ function handleMessageReplica(msg) {
 	}
 }
 
-function manageReplicaMsg(msg)  {
+function manageReplicaMsg(msg) {
 	if (msg.mensajes && msg.mensajes.length > 0) {
-		for (var i = 0; i < msg.mensajes.length; i++ ) {
+		for (var i = 0; i < msg.mensajes.length; i++) {
 			if (msg.mensajes[i].add)
 				statusQueue.mensajes.push(msg.mensajes[i].msg)
 			else {
@@ -107,28 +107,28 @@ function init(msg) {
 		if (socketMaster) socketMaster.disconnect() //Si fue replica, debe desconectarse del antiguo master
 
 		http.listen({ host: msg.host, port: msg.port }, () => {
-	      console.log(`Recibiendo conexiones de replicacion ${msg.host}:${msg.port}`);
-	    });
-
-	    io.on('connection', socket => {
-	      console.log(`connected: ${socket.id}`);
-	      const replicasEstadoActual = []
-	      for (var i = 0; i < statusQueue.mensajes.length; i++) {
-	      	replicasEstadoActual.push({add: true, msg: statusQueue.mensajes[i]})
-	      }
-		  socket.emit('toReplica',{ tipo: "toReplica", mensajes: replicasEstadoActual })		      
-	      setInterval(() => {
-					if (statusQueue.original) {
-						socket.emit('toReplica',{ tipo: "toReplica", mensajes: statusQueue.mensajesReplicar })
-						statusQueue.mensajesReplicar = []
-					}
-				}, 1000);
+			console.log(`Recibiendo conexiones de replicacion ${msg.host}:${msg.port}`);
 		});
-		console.log("mensaje de init recibido en nodo ",msg);
+
+		io.on('connection', socket => {
+			console.log(`connected: ${socket.id}`);
+			const replicasEstadoActual = []
+			for (var i = 0; i < statusQueue.mensajes.length; i++) {
+				replicasEstadoActual.push({ add: true, msg: statusQueue.mensajes[i] })
+			}
+			socket.emit('toReplica', { tipo: "toReplica", mensajes: replicasEstadoActual })
+			setInterval(() => {
+				if (statusQueue.original) {
+					socket.emit('toReplica', { tipo: "toReplica", mensajes: statusQueue.mensajesReplicar })
+					statusQueue.mensajesReplicar = []
+				}
+			}, 1000);
+		});
+		console.log("mensaje de init recibido en nodo ", msg);
 		this.socketWithManager = ioClient(`http://localhost:${msg.portWithManager}`);
 		this.socketWithManager.on('newMessages', msg => {
 			statusQueue.mensajes.push(msg.msg);
-			statusQueue.mensajesReplicar.push({add: true, msg: msg.msg});
+			statusQueue.mensajesReplicar.push({ add: true, msg: msg.msg });
 			console.log(`Soy queue ${process.pid}: Sumo mensaje: Tengo ${statusQueue.mensajes.length}`);
 			if (statusQueue.mensajes.length >= MAXIMO) {
 				process.send({ tipo: 'FULL' });
@@ -140,12 +140,12 @@ function init(msg) {
 
 		socketMaster = ioClient(`http://localhost:${msg.port}`);
 		socketMaster.on('toReplica', msg => {
-				//console.log("envio",msg)
-			 	manageReplicaMsg(msg)
-			});
+			//console.log("envio",msg)
+			manageReplicaMsg(msg)
+		});
 	}
-	if(statusQueue.tipoCola == "cola_de_trabajo")
+	if (statusQueue.tipoCola == "cola_de_trabajo")
 		console.log(`Nuevo nodo queue con topic:${msg.topic} | pid:${process.pid} | original:${statusQueue.original} | tipo:${statusQueue.tipoCola}`);
-	if(statusQueue.tipoCola == "publicar_suscribir")
+	if (statusQueue.tipoCola == "publicar_suscribir")
 		console.log(`Nuevo nodo queue con topic:${msg.topic} | pid:${process.pid} | original:${statusQueue.original} | tipo:${statusQueue.tipoCola} | consumer:${statusQueue.consumidor}`);
 }
